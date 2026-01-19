@@ -1,0 +1,15 @@
+activar venv: 
+
+venv\Scripts\Activate
+
+instalar django: 
+
+pip install django
+
+crear proyecto: 
+
+python manage.py startproject core .
+
+
+# iniciar el servidor
+python manage.py runserver
