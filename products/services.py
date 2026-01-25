@@ -87,4 +87,4 @@ class CompraService:
                 error_detalle = response.get("message", "Error desconocido de Mercado Pago")
                 raise ValueError(f"Mercado Pago Error: {error_detalle}")
             
-            return nuevo_pedido, response["init_point"]
+            return nuevo_pedido, preference_result["response"]

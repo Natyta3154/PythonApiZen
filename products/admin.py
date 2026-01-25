@@ -1,9 +1,10 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import CompraLog, Producto, Categoria, ItemPedido, Pedido
+from .models import CompraLog, Post, Producto, Categoria, ItemPedido, Pedido, Reseña
 # Nuevas importaciones para las métricas
 from django.db.models import Sum
 from django.utils import timezone
+from .models import Consulta
 
 @admin.register(Producto)
 class ProductoAdmin(admin.ModelAdmin):
@@ -72,8 +73,9 @@ class PedidoAdmin(admin.ModelAdmin):
         )
     estado_badge.short_description = "Visual"
 
-# --- LÓGICA DEL DASHBOARD DE MÉTRICAS ---
 
+    
+# --- LÓGICA DEL DASHBOARD DE MÉTRICAS ---
 # Guardamos la función original de index para no perderla
 original_index = admin.site.index
 
@@ -115,6 +117,8 @@ admin.site.index_title = "Gestión de Ventas y Productos"
 
 
 
+from django.utils.safestring import mark_safe # Importa esto
+
 @admin.register(CompraLog)
 class CompraLogAdmin(admin.ModelAdmin):
     list_display = ('id', 'usuario', 'monto', 'fecha_creacion', 'tipo_log_badge')
@@ -122,8 +126,61 @@ class CompraLogAdmin(admin.ModelAdmin):
     readonly_fields = ('usuario', 'pedido', 'detalle_log', 'monto', 'fecha_creacion')
 
     def tipo_log_badge(self, obj):
-        # Esto le da color a tus logs para diferenciarlos de las ventas
-        return format_html(
+        # Cambiamos format_html por mark_safe porque el HTML es estático
+        return mark_safe(
             '<span style="background-color: #5bc0de; color: white; padding: 2px 8px; border-radius: 5px; font-size: 10px;">LOG TÉCNICO</span>'
         )
     tipo_log_badge.short_description = "Tipo"
+
+
+@admin.register(Post)
+class PostAdmin(admin.ModelAdmin):
+    # Usamos 'fecha_creacion' que es el nombre real en tu modelo
+    list_display = ('id', 'titulo', 'autor', 'fecha_publicacion', 'imagen_preview')
+    prepopulated_fields = {'slug': ('titulo',)}
+    search_fields = ('titulo', 'contenido')
+    list_filter = ('fecha_publicacion', 'autor')
+
+    # ESTO HACE QUE APAREZCA EN EL FORMULARIO DE EDICIÓN
+    # Asegúrate de incluir todos los campos que quieres editar
+    fields = ('titulo', 'slug', 'autor', 'imagen', 'contenido', 'fecha_publicacion')
+
+    def imagen_preview(self, obj):
+        if obj.imagen:
+            return format_html('<img src="{}" style="width: 50px; height: auto; border-radius: 5px;" />', obj.imagen.url)
+        return "Sin imagen"
+    
+    imagen_preview.short_description = 'Vista'
+
+
+@admin.register(Reseña)
+class ReseñaAdmin(admin.ModelAdmin):
+    # Mostramos el usuario, producto y si está moderada
+    list_display = ('id', 'usuario', 'producto', 'puntuacion', 'moderado', 'fecha')
+    list_filter = ('moderado', 'puntuacion', 'fecha')
+    list_editable = ('moderado',) # Para aprobar reseñas rápidamente
+    search_fields = ('usuario__username', 'producto__nombre', 'comentario')
+    
+    # Acciones personalizadas para moderar en lote
+    actions = ['aprobar_reseñas']
+
+    @admin.action(description='Aprobar reseñas seleccionadas')
+    def aprobar_reseñas(self, request, queryset):
+        queryset.update(moderado=True)
+
+
+@admin.register(Consulta)
+class ConsultaAdmin(admin.ModelAdmin):
+     #columnas que se vera en el admin
+    list_display = ('id', 'nombre', 'email', 'asunto', 'fecha', 'leido')
+
+    #filtros laterales para encontrar mensajes 
+    list_filter = ('fecha', 'leido')
+
+    # Buscador por nombre, email y asunto
+    search_fields = ('nombre', 'email', 'asunto', 'mensaje')
+                    # Permitir marcar como leído directamente desde la lista
+    list_editable = ('leido',)
+
+    # Ordenar por fecha descendente
+    ordering = ('-fecha',)

@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     'blog',
 ]
 
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 # 3. AUTENTICACIÓN Y SEGURIDAD
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -57,6 +58,16 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:5173",
 ]
 
+# 3. Permite que el header CSRF pase a través de CORS
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "authorization",
+    "content-type",
+    "user-agent",
+    "x-csrftoken", # <--- Agrégalo explícitamente si usas una lista personalizada
+    "x-requested-with",
+    "withcredentials",
+]
 
 # Configuración de Cookies para desarrollo local
 SESSION_COOKIE_SAMESITE = 'Lax'
@@ -143,3 +154,9 @@ JAZZMIN_SETTINGS = {
     "show_sidebar": True,
     "navigation_expanded": True,
 }
+
+# La sesión expira cuando se cierra el navegador
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
+# Tiempo de vida de la sesión (ejemplo: 30 minutos de inactividad)
+SESSION_COOKIE_AGE = 1800  # 30 minutos en segundos

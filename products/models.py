@@ -1,5 +1,9 @@
+
 from django.db import models
 from django.conf import settings
+from django.contrib.auth.models import User
+from django.core.validators import MinValueValidator, MaxValueValidator
+from django.utils import timezone
 
 class Categoria(models.Model):
     nombre = models.CharField(max_length=100, verbose_name="Nombre de la Categoría")
@@ -101,20 +105,15 @@ class ItemPedido(models.Model):
 # ... (debajo de ItemPedido)
 
 class CompraLog(models.Model):
-    # Relación con el usuario de settings.AUTH_USER_MODEL
-    usuario = models.ForeignKey(
-        settings.AUTH_USER_MODEL, 
-        on_delete=models.CASCADE,
-        verbose_name="Usuario"
-    )
-    # Relación opcional con el pedido real para trazabilidad
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
     pedido = models.ForeignKey(
         Pedido, 
         on_delete=models.SET_NULL, 
         null=True, 
-        blank=True
+        blank=True,
+        verbose_name="Pedido Relacionado"
     )
-    # Resumen de la operación para el Log
+    referencia_pago = models.CharField(max_length=255, null=True, blank=True, verbose_name="Referencia MP")
     detalle_log = models.TextField(verbose_name="Detalle de la Actividad")
     monto = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Monto Registrado")
     fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha del Log")
@@ -126,3 +125,59 @@ class CompraLog(models.Model):
 
     def __str__(self):
         return f"LOG {self.id} | {self.usuario.username} | {self.fecha_creacion.strftime('%d/%m/%Y %H:%M')}"
+
+
+# Modelo para el Blog
+class Post(models.Model):
+    titulo = models.CharField(max_length=200, verbose_name="Título")
+    slug = models.SlugField(unique=True, max_length=200, blank=True)
+    imagen = models.ImageField(upload_to='posts/', null=True, blank=True)
+    contenido = models.TextField(verbose_name="Contenido del Post")
+    fecha_publicacion = models.DateTimeField(default=timezone.now, verbose_name="Fecha de publicación")
+    autor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="Autor del Post")
+
+    #parra lo que se ve en el admin izquierda
+    class Meta:
+        verbose_name = "Blog "
+        verbose_name_plural = "Blogs"
+        ordering = ['-fecha_publicacion']
+
+    def __str__(self):
+        return self.titulo
+    
+    
+
+class Reseña(models.Model):
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name='reseñas')
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    puntuacion = models.PositiveIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+        verbose_name="Estrellas"
+    )
+    comentario = models.TextField(max_length=500)
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    # Campo para moderación de reseñas primero se ve ne el admin luego se publica 
+    moderado = models.BooleanField(default=False) 
+
+
+    class Meta:
+        verbose_name = "Reseña de Cliente"
+        # Evita que un mismo usuario deje 2 reseñas del mismo producto
+        unique_together = ('producto', 'usuario') 
+
+    def __str__(self):
+        return f"{self.usuario.username} - {self.producto.nombre} ({self.puntuacion}⭐)"
+    
+
+class Consulta(models.Model):
+    nombre = models.CharField(max_length=100)
+    email = models.EmailField()
+    asunto = models.CharField(max_length=200)
+    mensaje = models.TextField()
+    fecha = models.DateTimeField(auto_now_add=True)
+    leido = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Consulta de {self.nombre} - {self.asunto}"

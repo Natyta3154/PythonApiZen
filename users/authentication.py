@@ -1,14 +1,20 @@
-#Como Django REST Framework espera el token en el Header. necesitamos un pequeño "traductor" que tome el token de la cookie y se lo dé a Django.
-
-
-from rest_framework.authentication import TokenAuthentication
+from rest_framework.authentication import TokenAuthentication, SessionAuthentication
 
 class CookieTokenAuthentication(TokenAuthentication):
+    """
+    Traductor: Toma el token de la cookie 'auth_token' (del login)
+    y lo valida para que request.user sea el usuario real.
+    """
     def authenticate(self, request):
-        # Buscamos el token en las cookies en lugar de los headers
-        token = request.COOKIES.get('auth_token')
-        
-        if not token:
+        token_key = request.COOKIES.get('auth_token')
+        if not token_key:
             return None
-            
-        return self.authenticate_credentials(token)
+        return self.authenticate_credentials(token_key)
+
+class CsrfExemptSessionAuthentication(SessionAuthentication):
+    """
+    Desactiva la verificación CSRF para permitir peticiones POST 
+    desde el frontend de React (localhost:5173).
+    """
+    def enforce_csrf(self, request):
+        return None

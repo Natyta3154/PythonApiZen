@@ -1,4 +1,4 @@
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
@@ -7,6 +7,22 @@ from django.contrib.auth import login
 from rest_framework.authtoken.models import Token 
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.permissions import AllowAny 
+from rest_framework.authentication import SessionAuthentication, TokenAuthentication
+from django.views.decorators.csrf import csrf_exempt 
+from django.contrib.auth import authenticate
+from django.contrib.auth import logout as django_logout
+import datetime
+
+
+# --- CLASE PARA SOLUCIONAR EL ERROR CSRF ---
+
+class CsrfExemptSessionAuthentication(SessionAuthentication):
+    """
+    Esta clase evita que Django pida el token CSRF.
+    Es necesaria porque estás usando cookies y login() de Django.
+    """
+    def enforce_csrf(self, request):
+        return None
 
 # Configuración común de cookies para mantener la sesión
 COOKIE_SETTINGS = {
@@ -55,7 +71,13 @@ def registro_api(request):
 class CustomLogin(ObtainAuthToken):
     """
     Login personalizado que permite entrar con Email y devuelve el rol is_staff.
+
+
     """
+# Esto soluciona el error de CSRF al intentar loguearse
+    authentication_classes = [CsrfExemptSessionAuthentication]
+
+
     def post(self, request, *args, **kwargs):
         data = request.data.copy()
         email = data.get('email')
@@ -90,13 +112,38 @@ class CustomLogin(ObtainAuthToken):
 
 
 #logout personalizado de usuario
-@api_view(['POST'])
+@csrf_exempt
+@api_view(['GET', 'POST']) # <--- Habilitamos ambos para matar el 405
+@authentication_classes([]) # Evita que pida Token para salir
+@permission_classes([AllowAny])
 def logout_api(request):
     """
-    Cierra la sesión y elimina la cookie.
+    Cierra la sesión de forma profesional, invalida en DB y limpia el navegador.
     """
-    response = Response({'message': 'Sesión cerrada'}, status=status.HTTP_200_OK)
-    response.delete_cookie('auth_token', samesite='Lax')
+    user_identity = f"{request.user.username}" if request.user.is_authenticated else "Anónimo"
+    
+    print(f"\n--- [SISTEMA DE SEGURIDAD: LOGOUT] {datetime.datetime.now().strftime('%H:%M:%S')} ---")
+    print(f"ESTADO: Procesando salida para {user_identity}")
+
+    # 1. Invalida la sesión en Django (Servidor)
+    django_logout(request)
+
+    response = Response(
+        {"status": "success", "message": "Sesión cerrada de forma segura"}, 
+        status=status.HTTP_200_OK
+    )
+
+    # 2. Borrado de Cookies (Mismos parámetros que usas en el Login)
+    # Importante: El path '/' asegura que se borren globalmente
+    cookie_params = {'path': '/', 'samesite': 'Lax'}
+    
+    response.delete_cookie('auth_token', **cookie_params)
+    response.delete_cookie('csrftoken', **cookie_params)
+    response.delete_cookie('sessionid', **cookie_params)
+
+    print(f"RESULTADO: Cookies eliminadas. herny3154@gmail.com ha salido del sistema.")
+    print("-" * 50 + "\n")
+    
     return response
 
 # Obtener datos del usuario actual
@@ -113,33 +160,47 @@ def me(request):
     })
 
 @api_view(['PUT'])
+# AGREGAMOS ESTO: Es vital para que herede la exención de CSRF y reconozca la sesión
+@authentication_classes([CsrfExemptSessionAuthentication]) 
 @permission_classes([IsAuthenticated])
 def actualizar_perfil(request):
     user = request.user
     data = request.data
     
+    # LOG DE INICIO DE OPERACIÓN [2026-01-19]
+    print(f"--- [LOG PERFIL] Intento de actualización: Usuario ID {user.id} ({user.username}) ---")
+
     # Actualizar campos de identidad
-    user.username = data.get('username', user.username)
-    user.email = data.get('email', user.email).lower()
-    user.first_name = data.get('first_name', user.first_name) # Nombre
-    user.last_name = data.get('last_name', user.last_name)   # Apellido
+    # Usamos data.get('campo', user.campo) para que si el campo no viene, no lo ponga en blanco
+    user.username = data.get('username', user.username).strip()
+    user.email = data.get('email', user.email).strip().lower()
+    user.first_name = data.get('first_name', user.first_name).strip()
+    user.last_name = data.get('last_name', user.last_name).strip()
     
     password = data.get('password')
-    if password and len(password) > 0:
+    if password and len(password.strip()) > 0:
         user.set_password(password)
+        print(f"--- [LOG PERFIL] El usuario {user.username} cambió su contraseña ---")
         
     try:
-        user.save()
+        user.save() # GUARDADO EN DB    
+        # LOG DE ÉXITO
+        print(f"--- [LOG PERFIL] ÉXITO: Base de datos actualizada para {user.username} ---")
+        
         return Response({
-            'message': 'Perfil actualizado',
+            'message': 'Perfil actualizado correctamente',
             'username': user.username,
             'email': user.email,
             'first_name': user.first_name,
             'last_name': user.last_name,
             'is_staff': user.is_staff
-        })
+        }, status=status.HTTP_200_OK)
+        
     except Exception as e:
-        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        print(f"--- [LOG PERFIL] ERROR al guardar: {str(e)} ---")
+        return Response({
+            'error': 'No se pudo guardar la información. Verifique que el nombre de usuario o email no existan.'
+        }, status=status.HTTP_400_BAD_REQUEST)
 
 
 

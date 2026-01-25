@@ -13,3 +13,14 @@ python manage.py startproject core .
 
 # iniciar el servidor
 python manage.py runserver
+
+
+#Para las migraciones 
+1. 
+python manage.py makemigrations
+2.
+python manage.py migrate
+
+
+falta crear pagina del post y nlas reseña o mejor cenectar con front 
+se creo los dod serelizer i vistas flata url de reseña 
