@@ -8,7 +8,7 @@ from .models import Consulta
 
 @admin.register(Producto)
 class ProductoAdmin(admin.ModelAdmin):
-    list_display = ('id', 'nombre', 'aroma', 'precio_original_display', 'oferta_status', 'precio_oferta_display', 'stock_status', 'imagen_preview')
+    list_display = ('id', 'nombre', 'aroma', 'precio_original_display', 'oferta_status', 'precio_oferta_display', 'stock_status', )
     list_filter = ('en_oferta', 'categoria')
     search_fields = ('nombre',)
 
