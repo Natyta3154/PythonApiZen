@@ -6,8 +6,8 @@ from dotenv import load_dotenv
 load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY', 'clave-segura-desarrollo')
-DEBUG = True
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+DEBUG = os.getenv("DEBUG", "False") == "True"
+ALLOWED_HOSTS = ['*']
 
 # 2. APLICACIONES (El orden es importante)
 INSTALLED_APPS = [
@@ -161,3 +161,4 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 # Tiempo de vida de la sesión (ejemplo: 30 minutos de inactividad)
 SESSION_COOKIE_AGE = 1800  # 30 minutos en segundos
+STATIC_ROOT = BASE_DIR / "staticfiles"
