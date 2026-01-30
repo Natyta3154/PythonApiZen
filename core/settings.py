@@ -5,10 +5,10 @@ from dotenv import load_dotenv
 # 1. RUTAS Y VARIABLES DE ENTORNO
 load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
-SECRET_KEY = os.getenv('SECRET_KEY', 'clave-segura-desarrollo')
-DEBUG = True # Forzamos True para que veas el CSS en local
-ALLOWED_HOSTS = ['*']
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-2-&=d=k!(hxe-=+8mrzjsw4!ou=hc)9liihg32bp#ci&z6eu7&')
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
+
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
 
 # 2. APLICACIONES
 INSTALLED_APPS = [
@@ -90,11 +90,20 @@ REST_FRAMEWORK = {
        # 'PORT': os.getenv('DB_PORT'),
     #}
 #}
-import dj_database_url # Si no lo tienes, corre: pip install dj-database-url
+import dj_database_url
 
 # 6. BASE DE DATOS
 DATABASES = {
-    'default': {
+    'default': dj_database_url.config(
+        default=os.getenv('DATABASE_URL'),
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
+}
+
+# Si por alguna razón no hay DATABASE_URL, usamos la configuración manual de MySQL (como respaldo local)
+if not DATABASES['default']:
+    DATABASES['default'] = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': os.getenv('DB_NAME'),
         'USER': os.getenv('DB_USER'),
@@ -105,7 +114,6 @@ DATABASES = {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
         },
     }
-}
 
 
 # 7. TEMPLATES
@@ -127,8 +135,14 @@ TEMPLATES = [
 
 # 8. SEGURIDAD Y COOKIES
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOWED_ORIGINS = ["http://localhost:5173", "http://127.0.0.1:5173"]
-CSRF_TRUSTED_ORIGINS = ["http://localhost:5173", "http://127.0.0.1:5173"]
+
+# Permitir orígenes desde variables de entorno
+cors_origins = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173').split(',')
+CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins if origin.strip()]
+
+csrf_origins = os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173').split(',')
+CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in csrf_origins if origin.strip()]
+
 CORS_ALLOW_HEADERS = ["accept", "authorization", "content-type", "user-agent", "x-csrftoken", "x-requested-with", "withcredentials"]
 
 SESSION_COOKIE_SAMESITE = 'Lax'
