@@ -1,6 +1,9 @@
 from rest_framework import serializers
 from django.db.models import Avg
-from .models import Consulta, Post, Producto, Categoria, Pedido, ItemPedido, Reseña
+# 1. Importamos lo que quedó en products
+from .models import Consulta, Producto, Categoria, Pedido, ItemPedido
+# 2. Importamos lo que se movió a blog (CORRECCIÓN AQUÍ)
+from blog.models import Post, Reseña 
 
 # 1. CATEGORÍAS
 class CategoriaSerializer(serializers.ModelSerializer):

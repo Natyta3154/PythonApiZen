@@ -1,4 +1,4 @@
-from blog import views
+
 from products.views import webhook_mercadopago
 from django.urls import path
 from .views import crear_reseña, detalle_post, enviar_consulta, lista_categorias, lista_posts, lista_productos, lista_productos_destacdos, lista_testimonios # La vista que creamos antes

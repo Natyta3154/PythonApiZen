@@ -2,22 +2,32 @@ import mercadopago
 import datetime
 import traceback
 from django.conf import settings
+from django.views.decorators.csrf import csrf_exempt
+
+# Rest Framework
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny 
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, serializers, viewsets
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
 from django.contrib.auth import logout as django_logout
-from .models import CompraLog, ItemPedido, Post, Producto, Pedido, Reseña
-from .serializers import ConsultaSerializer, ProductoSerializer, HistorialSerializer, PostSerializer, ReseñaSerializer
-from .services import CompraService
-from django.views.decorators.csrf import csrf_exempt
+
+# Autenticación personalizada
 from users.authentication import CookieTokenAuthentication, CsrfExemptSessionAuthentication
-from .models import Post
-from rest_framework import serializers
-from .models import Consulta
-from .serializers import ConsultaSerializer
-from rest_framework import viewsets, permissions
+
+# MODELOS
+# 1. Importamos lo que quedó en products
+from .models import CompraLog, ItemPedido, Producto, Pedido, Consulta, Categoria
+# 2. Importamos lo que se movió a blog (CORRECCIÓN VITAL)
+from blog.models import Post, Reseña 
+
+# SERIALIZERS
+from .serializers import (
+    ConsultaSerializer, ProductoSerializer, HistorialSerializer, 
+    CategoriaSerializer, PostSerializer, ReseñaSerializer
+)
+
+from .services import CompraService
 
 
 # --- LISTADOS ---
@@ -232,7 +242,3 @@ def enviar_consulta(request):
         serializer.save()
         return Response({"mensaje": "Consulta enviada con éxito."}, status=201)
     return Response(serializer.errors, status=400)
-
-
-
-    

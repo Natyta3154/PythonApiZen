@@ -28,9 +28,10 @@ def home(request):
 
 
 urlpatterns = [
-     path('', home), 
+    path('', home),
     path('admin/', admin.site.urls),
-    # Agrupamos todas las rutas de la API bajo el prefijo 'api/'
     path('api/productos/', include('products.urls')),
+    path('api/blog/', include('blog.urls')),
     path('api/usuarios/', include('users.urls')),
 ]
+

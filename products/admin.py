@@ -1,10 +1,8 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
-from django.db.models import Sum
-from django.utils import timezone
-from .models import CompraLog, Post, Producto, Categoria, ItemPedido, Pedido, Reseña, Consulta
-
+from .models import CompraLog, Producto, Categoria, ItemPedido, Pedido, Consulta
+from blog.models import Post
 # --- CONFIGURACIÓN DE ENCABEZADOS ---
 admin.site.site_header = "Panel de Control - Sahumerios AromaZen"
 admin.site.site_title = "AromaZen Admin"
@@ -61,7 +59,6 @@ class ItemPedidoInline(admin.TabularInline):
 
 @admin.register(Pedido)
 class PedidoAdmin(admin.ModelAdmin):
-    # CORRECCIÓN: Se añade 'estado' a la lista para que coincida con list_editable
     list_display = ('id', 'usuario', 'fecha_venta', 'total_pagado', 'estado', 'estado_badge')
     list_editable = ('estado',) 
     list_filter = ('estado', 'fecha_venta')
@@ -82,22 +79,7 @@ class PedidoAdmin(admin.ModelAdmin):
         )
     estado_badge.short_description = "Visualización"
 
-# --- BLOG ---
-@admin.register(Post)
-class PostAdmin(admin.ModelAdmin):
-    list_display = ('id', 'imagen_preview', 'titulo', 'autor', 'fecha_publicacion')
-    prepopulated_fields = {'slug': ('titulo',)}
-    search_fields = ('titulo', 'contenido')
-    list_filter = ('fecha_publicacion', 'autor')
-    fields = ('titulo', 'slug', 'autor', 'imagen', 'contenido', 'fecha_publicacion')
-
-    def imagen_preview(self, obj):
-        if obj.imagen:
-            return format_html('<img src="{}" style="width: 50px; height: auto; border-radius: 5px;" />', obj.imagen.url)
-        return "📝"
-    imagen_preview.short_description = 'Vista'
-
-# --- AUDITORÍA Y LOGS ---
+# --- AUDITORÍA Y LOGS DE COMPRA ---
 @admin.register(CompraLog)
 class CompraLogAdmin(admin.ModelAdmin):
     list_display = ('id', 'usuario', 'monto', 'fecha_creacion', 'tipo_log_badge')
@@ -110,18 +92,7 @@ class CompraLogAdmin(admin.ModelAdmin):
         )
     tipo_log_badge.short_description = "Categoría Log"
 
-# --- RESEÑAS Y CONSULTAS ---
-@admin.register(Reseña)
-class ReseñaAdmin(admin.ModelAdmin):
-    list_display = ('id', 'usuario', 'producto', 'puntuacion', 'moderado', 'fecha')
-    list_filter = ('moderado', 'puntuacion')
-    list_editable = ('moderado',)
-    actions = ['aprobar_reseñas']
-
-    @admin.action(description='Aprobar reseñas seleccionadas')
-    def aprobar_reseñas(self, request, queryset):
-        queryset.update(moderado=True)
-
+# --- CONSULTAS ---
 @admin.register(Consulta)
 class ConsultaAdmin(admin.ModelAdmin):
     list_display = ('id', 'nombre', 'email', 'asunto', 'fecha', 'leido')
@@ -129,6 +100,3 @@ class ConsultaAdmin(admin.ModelAdmin):
     list_editable = ('leido',)
     search_fields = ('nombre', 'email', 'asunto')
     ordering = ('-fecha',)
-
-# --- LÓGICA DEL DASHBOARD DE MÉTRICAS (HOME ADMIN) ---
-# (Removido para volver al admin original)
