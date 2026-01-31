@@ -30,7 +30,7 @@ def home(request):
 urlpatterns = [
     path('', home),
     path('admin/', admin.site.urls),
-    path('api/productos/', include('products.urls')),
+    path('api/', include('products.urls')),
     path('api/blog/', include('blog.urls')),
     path('api/usuarios/', include('users.urls')),
 ]
