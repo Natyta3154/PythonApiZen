@@ -13,6 +13,7 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # 2. APLICACIONES
 INSTALLED_APPS = [
+    'jazzmin',
     'cloudinary_storage',         # Debe ir antes de staticfiles
     'django.contrib.admin',
     'django.contrib.auth',
@@ -71,7 +72,7 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / "staticfiles_build"
-STATICFILES_DIRS = [BASE_DIR / "staticfiles" ]
+STATICFILES_DIRS = [BASE_DIR / "staticfiles"]
 
 # 5. AUTENTICACIÓN Y API
 REST_FRAMEWORK = {
@@ -200,3 +201,14 @@ USE_I18N = True
 USE_TZ = True
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MP_ACCESS_TOKEN = os.getenv('MP_ACCESS_TOKEN')
+
+
+JAZZMIN_SETTINGS = {
+    "site_title": "AromaZen Admin",
+    "site_header": "AromaZen",
+    "site_brand": "AromaZen Panel",
+    "welcome_sign": "Bienvenido al Panel de Control de AromaZen",
+    "copyright": "AromaZen Ltd",
+    "search_model": ["auth.User", "products.Product"],
+    "show_ui_builder": True, # Esto te permite cambiar colores en vivo
+}
