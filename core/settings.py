@@ -73,6 +73,11 @@ STATICFILES_STORAGE = "whitenoise.storage.StaticFilesStorage"
 # Asegúrate que estas rutas NO tengan espacios extra
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+if not os.path.exists(STATIC_ROOT):
+    os.makedirs(STATIC_ROOT)
+
+
 STATICFILES_DIRS = []
 # Para que WhiteNoise funcione bien en local sin DATABASE_URL
 WHITENOISE_MANIFEST_STRICT = False
@@ -80,6 +85,17 @@ STATICFILES_FINDERS = [
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
     'django.contrib.staticfiles.finders.FileSystemFinder',
 ]
+
+# Esto ayuda a Jazzmin a ser "encontrado" si el auto-discovery falla
+import jazzmin
+JAZZMIN_PATH = os.path.dirname(jazzmin.__file__)
+# No necesitas añadirlo a STATICFILES_DIRS si AppDirectoriesFinder funciona, 
+# pero si sigue vacía, lo pondremos aquí:
+STATICFILES_DIRS = [
+    os.path.join(JAZZMIN_PATH, 'static'),
+]
+
+
 
 # 5. AUTENTICACIÓN Y API
 REST_FRAMEWORK = {
@@ -128,6 +144,8 @@ if not DATABASES['default']:
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
         },
     }
+
+    
 
 
 # 7. TEMPLATES
