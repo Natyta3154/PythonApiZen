@@ -65,8 +65,8 @@ STORAGES = {
 }
 
 STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_DIRS = [BASE_DIR / "static"]
+STATIC_ROOT = BASE_DIR / "staticfiles_build"
+STATICFILES_DIRS = [BASE_DIR / " staticfiles" ]
 
 # 5. AUTENTICACIÓN Y API
 REST_FRAMEWORK = {
