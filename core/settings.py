@@ -61,15 +61,16 @@ STORAGES = {
         "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
     },
     "staticfiles": {
-        # CAMBIO CLAVE: Quitamos la palabra 'Manifest'
-        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+        # CAMBIO DEFINITIVO: Usamos el storage base de WhiteNoise
+        # Esto ignora el post-procesamiento que causa el FileNotFoundError
+        "BACKEND": "whitenoise.storage.StaticFilesStorage", 
     },
 }
 
-# Recuerda mantener esto para que Cloudinary no de error
-STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
+# Obligatorio para engañar a la librería de Cloudinary
+STATICFILES_STORAGE = "whitenoise.storage.StaticFilesStorage"
 
-
+# Asegúrate que estas rutas NO tengan espacios extra
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / "staticfiles_build"
 STATICFILES_DIRS = [BASE_DIR / "staticfiles"]
