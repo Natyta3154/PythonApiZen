@@ -69,12 +69,12 @@ STORAGES = {
         "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
     },
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        "BACKEND": "whitenoise.storage.StaticFilesStorage",
     },
 }
 
 # Compatibilidad con apps que buscan la variable clásica
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+STATICFILES_STORAGE = "whitenoise.storage.StaticFilesStorage"
 
 WHITENOISE_MANIFEST_STRICT = False
 WHITENOISE_USE_FINDERS = True
