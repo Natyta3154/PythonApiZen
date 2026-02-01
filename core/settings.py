@@ -72,8 +72,14 @@ STATICFILES_STORAGE = "whitenoise.storage.StaticFilesStorage"
 
 # Asegúrate que estas rutas NO tengan espacios extra
 STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / "staticfiles_build"
-STATICFILES_DIRS = [BASE_DIR / "staticfiles"]
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_DIRS = []
+# Para que WhiteNoise funcione bien en local sin DATABASE_URL
+WHITENOISE_MANIFEST_STRICT = False
+STATICFILES_FINDERS = [
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+]
 
 # 5. AUTENTICACIÓN Y API
 REST_FRAMEWORK = {
