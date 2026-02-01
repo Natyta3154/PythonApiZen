@@ -17,7 +17,9 @@ Including another URLconf
 
 from django.contrib import admin
 from django.http import JsonResponse
-from django.urls import path, include   
+from django.urls import path, include
+from django.conf.urls.static import static
+from core import settings   
 
 def home(request):
     return JsonResponse({
@@ -35,3 +37,6 @@ urlpatterns = [
     path('api/usuarios/', include('users.urls')),
 ]
 
+# Esto sirve los archivos en desarrollo
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
