@@ -51,36 +51,30 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-# 4. CONFIGURACIÓN DE ALMACENAMIENTO
+# 4. CONFIGURACIÓN DE ALMACENAMIENTO (Actualizado para forzar lectura)
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME'),
     'API_KEY': os.getenv('CLOUDINARY_API_KEY'),
     'API_SECRET': os.getenv('CLOUDINARY_API_SECRET')
 }
 
+# Configuración de archivos estáticos
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = [os.path.join(BASE_DIR, "static")]
+
+# Whitenoise & Cloudinary Storage
 STORAGES = {
     "default": {
         "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
     },
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.StaticFilesStorage", 
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
 }
 
-# Configuración de archivos estáticos
-STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / "staticfiles"
-
-# Buscadores de archivos
-STATICFILES_FINDERS = [
-    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
-    'django.contrib.staticfiles.finders.FileSystemFinder',
-]
-
-# Si tienes archivos estáticos propios (logos, css extra), créala en la raíz
-# Si no la tienes, deja la lista vacía para evitar errores
-STATIC_PATH = BASE_DIR / "static"
-STATICFILES_DIRS = [STATIC_PATH] if STATIC_PATH.exists() else []
+# Compatibilidad con apps que buscan la variable clásica
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 WHITENOISE_MANIFEST_STRICT = False
 WHITENOISE_USE_FINDERS = True
@@ -99,27 +93,6 @@ if not DATABASES['default']:
         'ENGINE': 'django.db.backends.sqlite3', # Cambiado a sqlite para que collectstatic no falle localmente
         'NAME': BASE_DIR / 'db.sqlite3',
     }
-
-# 7. TEMPLATES
-TEMPLATES = [
-    {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-            ],
-        },
-    },
-]
-
-# --- El resto de tu configuración (Seguridad, CORS, Jazzmin) se mantiene igual ---
-# ... (Mantén aquí tus bloques de SEGURIDAD, CORS y JAZZMIN_SETTINGS)
-    
 
 
 # 7. TEMPLATES
