@@ -54,16 +54,18 @@ CLOUDINARY_STORAGE = {
     'API_SECRET': os.getenv('CLOUDINARY_API_SECRET')
 }
 
+# 4. CONFIGURACIÓN DE ALMACENAMIENTO
 STORAGES = {
     "default": {
         "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
     },
     "staticfiles": {
-        # CAMBIA ESTO: WhiteNoise optimizado para producción
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        # CAMBIO CLAVE: Quitamos la palabra 'Manifest'
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
     },
 }
-# AGREGA ESTA LÍNEA AQUÍ ABAJO:
+
+# Recuerda mantener esto para que Cloudinary no de error
 STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
 
 
