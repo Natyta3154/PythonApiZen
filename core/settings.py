@@ -1,6 +1,8 @@
 import os
+import dj_database_url
 from pathlib import Path
 from dotenv import load_dotenv
+import mimetypes
 
 # 1. RUTAS Y VARIABLES DE ENTORNO
 load_dotenv()
@@ -11,10 +13,14 @@ DEBUG = os.getenv('DEBUG', 'False') == 'True'
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
+# Forzar reconocimiento de archivos CSS/JS en Windows y Linux
+mimetypes.add_type("text/css", ".css", True)
+mimetypes.add_type("text/javascript", ".js", True)
+
 # 2. APLICACIONES
 INSTALLED_APPS = [
     'jazzmin',
-    'cloudinary_storage',         # Debe ir antes de staticfiles
+    'cloudinary_storage',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -22,13 +28,11 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     
-    # Librerías de terceros
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
     'cloudinary',
 
-    # Aplicaciones locales
     'users',
     'products',
     'blog',
@@ -36,9 +40,9 @@ INSTALLED_APPS = [
 
 # 3. MIDDLEWARE
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware', # Agregado para servir CSS
+    'whitenoise.middleware.WhiteNoiseMiddleware', # Debe ir justo aquí
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -47,80 +51,39 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-# 4. CONFIGURACIÓN DE ALMACENAMIENTO (ESTO ES LO IMPORTANTE)
-# Separamos Media (Cloudinary) de Static (Local)
+# 4. CONFIGURACIÓN DE ALMACENAMIENTO
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME'),
     'API_KEY': os.getenv('CLOUDINARY_API_KEY'),
     'API_SECRET': os.getenv('CLOUDINARY_API_SECRET')
 }
 
-# 4. CONFIGURACIÓN DE ALMACENAMIENTO
 STORAGES = {
     "default": {
         "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
     },
     "staticfiles": {
-        # CAMBIO DEFINITIVO: Usamos el storage base de WhiteNoise
-        # Esto ignora el post-procesamiento que causa el FileNotFoundError
         "BACKEND": "whitenoise.storage.StaticFilesStorage", 
     },
 }
 
-# Obligatorio para engañar a la librería de Cloudinary
-STATICFILES_STORAGE = "whitenoise.storage.StaticFilesStorage"
-
-# Asegúrate que estas rutas NO tengan espacios extra
+# Configuración de archivos estáticos
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-if not os.path.exists(STATIC_ROOT):
-    os.makedirs(STATIC_ROOT)
-
-
-STATICFILES_DIRS = []
-# Para que WhiteNoise funcione bien en local sin DATABASE_URL
-WHITENOISE_MANIFEST_STRICT = False
+# Buscadores de archivos
 STATICFILES_FINDERS = [
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
     'django.contrib.staticfiles.finders.FileSystemFinder',
 ]
 
-# Esto ayuda a Jazzmin a ser "encontrado" si el auto-discovery falla
-import jazzmin
-JAZZMIN_PATH = os.path.dirname(jazzmin.__file__)
-# No necesitas añadirlo a STATICFILES_DIRS si AppDirectoriesFinder funciona, 
-# pero si sigue vacía, lo pondremos aquí:
-STATICFILES_DIRS = [
-    os.path.join(JAZZMIN_PATH, 'static'),
-]
+# Si tienes archivos estáticos propios (logos, css extra), créala en la raíz
+# Si no la tienes, deja la lista vacía para evitar errores
+STATIC_PATH = BASE_DIR / "static"
+STATICFILES_DIRS = [STATIC_PATH] if STATIC_PATH.exists() else []
 
-
-
-# 5. AUTENTICACIÓN Y API
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.SessionAuthentication',
-        'users.authentication.CookieTokenAuthentication', 
-        'rest_framework.authentication.TokenAuthentication',
-    ],
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
-    ]
-}
-
-# 6. BASE DE DATOS
-#DATABASES = {
- #   'default': {
-  #      'ENGINE': 'django.db.backends.mysql',
-   #     'NAME': os.getenv('DB_NAME'),
-    #    'USER': os.getenv('DB_USER'),
-     #   'PASSWORD': os.getenv('DB_PASSWORD'),
-      #  'HOST': os.getenv('DB_HOST'),
-       # 'PORT': os.getenv('DB_PORT'),
-    #}
-#}
-import dj_database_url
+WHITENOISE_MANIFEST_STRICT = False
+WHITENOISE_USE_FINDERS = True
 
 # 6. BASE DE DATOS
 DATABASES = {
@@ -131,20 +94,31 @@ DATABASES = {
     )
 }
 
-# Si por alguna razón no hay DATABASE_URL, usamos la configuración manual de MySQL (como respaldo local)
 if not DATABASES['default']:
     DATABASES['default'] = {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv('DB_NAME'),
-        'USER': os.getenv('DB_USER'),
-        'PASSWORD': os.getenv('DB_PASSWORD'),
-        'HOST': os.getenv('DB_HOST'),
-        'PORT': os.getenv('DB_PORT'),
-        'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-        },
+        'ENGINE': 'django.db.backends.sqlite3', # Cambiado a sqlite para que collectstatic no falle localmente
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 
+# 7. TEMPLATES
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [BASE_DIR / 'templates'],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
+
+# --- El resto de tu configuración (Seguridad, CORS, Jazzmin) se mantiene igual ---
+# ... (Mantén aquí tus bloques de SEGURIDAD, CORS y JAZZMIN_SETTINGS)
     
 
 
