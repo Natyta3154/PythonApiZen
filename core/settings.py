@@ -3,14 +3,28 @@ import dj_database_url
 from pathlib import Path
 from dotenv import load_dotenv
 import mimetypes
+import pymysql
+import ssl
 
+
+# ESTO ES SOLO PARA DESARROLLO LOCAL
+# Evita el error de certificado SSL en Windows/Mac
+if os.environ.get('DEVELOPMENT', 'False') == 'True':
+    ssl._create_default_https_context = ssl._create_unverified_context
+
+
+
+pymysql.install_as_MySQLdb()
 # 1. RUTAS Y VARIABLES DE ENTORNO
 load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-2-&=d=k!(hxe-=+8mrzjsw4!ou=hc)9liihg32bp#ci&z6eu7&')
-DEBUG = os.getenv('DEBUG', 'False') == 'True'
+DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
+
+ALLOWED_HOSTS = [host.strip() for host in os.getenv('ALLOWED_HOSTS', '').split(',') if host.strip()]
+
+
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Forzar reconocimiento de archivos CSS/JS en Windows y Linux
@@ -88,11 +102,21 @@ DATABASES = {
     )
 }
 
-if not DATABASES['default']:
-    DATABASES['default'] = {
-        'ENGINE': 'django.db.backends.sqlite3', # Cambiado a sqlite para que collectstatic no falle localmente
-        'NAME': BASE_DIR / 'db.sqlite3',
+if not DATABASES.get("default"):
+   DATABASES = {
+    "default": {
+        "ENGINE": os.getenv("DB_ENGINE"),
+        "NAME": os.getenv("DB_NAME"),
+        "USER": os.getenv("DB_USER"),
+        "PASSWORD": os.getenv("DB_PASSWORD"),
+        "HOST": os.getenv("DB_HOST"),
+        "PORT": os.getenv("DB_PORT"),
+        "OPTIONS": {
+            "charset": os.getenv("DB_CHARSET", "utf8mb4"),
+        },
     }
+}
+
 
 
 # 7. TEMPLATES
@@ -165,6 +189,19 @@ CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in csrf_origins if origin.stri
 
 
 
+
+# # 8. CONFIGURACIÓN DE EMAIL de google
+# Configuración de email profesional
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+
+# Usamos os.getenv para buscar los valores sin mostrarlos
+EMAIL_HOST_USER = os.getenv('EMAIL_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_PASS')
+DEFAULT_FROM_EMAIL = f'Aroma Zen <{os.getenv("EMAIL_USER")}>'
+
 # 9. OTROS
 ROOT_URLCONF = 'core.urls'
 LANGUAGE_CODE = 'es-ar'
@@ -175,6 +212,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MP_ACCESS_TOKEN = os.getenv('MP_ACCESS_TOKEN')
 
 
+# 10. JAZZMIN grafico de admin
 JAZZMIN_SETTINGS = {
     "site_title": "AromaZen Admin",
     "site_header": "AromaZen",

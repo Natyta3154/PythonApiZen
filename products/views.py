@@ -3,7 +3,7 @@ import datetime
 import traceback
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
-
+from .utils import enviar_confirmacion_compra
 # Rest Framework
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny 
@@ -90,10 +90,13 @@ def realizar_compra_carrito(request):
         traceback.print_exc()
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+from .utils import enviar_confirmacion_compra # Importa la función que creamos
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def webhook_mercadopago(request):
     data = request.data
+    # Obtenemos el ID del pago, ya sea por el cuerpo (POST) o por parámetros de URL (GET)
     payment_id = data.get("data", {}).get("id") or request.GET.get('data.id')
     
     if data.get("type") == "payment" and payment_id:
@@ -105,18 +108,36 @@ def webhook_mercadopago(request):
                 pedido_id = payment_info["response"]["external_reference"]
                 pedido = Pedido.objects.get(id=pedido_id)
                 
+                # Solo procesamos si el pedido no está pagado aún (evita duplicados)
                 if pedido.estado in ['PENDIENTE', 'EN_PROCESO']:
                     pedido.estado = 'PAGADO'
                     pedido.save()
                     
-                    # ACTUALIZACIÓN DEL LOG DE COMPRA
+                    # 1. ACTUALIZACIÓN DEL LOG DE COMPRA PERSISTENTE
                     log = CompraLog.objects.filter(referencia_pago=str(pedido.id)).first()
+                    log_msg = " [PAGO APROBADO MP]"
+                    
+                    # 2. INTENTO DE ENVÍO DE EMAIL PROFESIONAL
+                    try:
+                        enviar_confirmacion_compra(pedido)
+                        log_msg += " [EMAIL ENVIADO]"
+                        print(f"--- [LOG] EMAIL ENVIADO EXITOSAMENTE A {pedido.usuario.email} ---")
+                    except Exception as e_mail:
+                        log_msg += f" [ERROR EMAIL: {str(e_mail)}]"
+                        print(f"--- [ERROR LOG] Falló el envío de mail: {str(e_mail)} ---")
+
+                    # Guardamos todo el historial en el detalle del log
                     if log:
-                        log.detalle_log += " [PAGO COMPLETADO EXITOSAMENTE]"
+                        log.detalle_log += log_msg
                         log.save()
+
                     print(f"--- [LOG] COMPRA #{pedido_id} FINALIZADA CON ÉXITO ---")
+
         except Exception as e:
-            print(f"Error en Webhook: {str(e)}")
+            print(f"Error crítico en Webhook: {str(e)}")
+            # No devolvemos error a MP para evitar que reintente infinitamente si es un error de nuestro código
+    
+    # Mercado Pago espera siempre un 200 o 201 para dejar de notificar
     return Response(status=200)
 
 @api_view(['GET'])

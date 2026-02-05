@@ -1,0 +1,65 @@
+{% extends "admin/index.html" %}
+{% load i18n static %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card card-success">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-chart-line"></i> Ventas Semanales (ARS)</h3>
+                </div>
+                <div class="card-body">
+                    <canvas id="salesChart" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card card-info">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-pie-chart"></i> Top 3 Más Vendidos</h3>
+                </div>
+                <div class="card-body">
+                    <canvas id="topProductsChart" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Configuración del gráfico de Ventas (Barras)
+    const ctxSales = document.getElementById('salesChart').getContext('2d');
+    new Chart(ctxSales, {
+        type: 'bar',
+        data: {
+            labels: ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'],
+            datasets: [{
+                label: 'Ventas del Día',
+                data: [12000, 19000, 3000, 5000, 20000, 30000, 45000], // Aquí vendrán tus datos reales
+                backgroundColor: 'rgba(40, 167, 69, 0.7)',
+                borderColor: 'rgba(40, 167, 69, 1)',
+                borderWidth: 1
+            }]
+        }
+    });
+
+    // Configuración del gráfico de Productos (Torta)
+    const ctxProducts = document.getElementById('topProductsChart').getContext('2d');
+    new Chart(ctxProducts, {
+        type: 'doughnut',
+        data: {
+            labels: ['Aceite Lavanda', 'Sahumerio Zen', 'Vela Relax'],
+            datasets: [{
+                data: [30, 20, 15],
+                backgroundColor: ['#28a745', '#17a2b8', '#ffc107'],
+            }]
+        }
+    });
+</script>
+
+{{ block.super }}
+{% endblock %}

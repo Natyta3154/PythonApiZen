@@ -32,11 +32,11 @@ def home(request):
 urlpatterns = [
     path('', home),
     path('admin/', admin.site.urls),
-    path('api/', include('products.urls')),
-    path('api/blog/', include('blog.urls')),
-    path('api/usuarios/', include('users.urls')),
+    # Cambiamos 'api/' por 'api/productos/'
+    path('api/productos/', include(('products.urls', 'products'), namespace='products')),
+    path('api/blog/', include(('blog.urls', 'blog'), namespace='blog')),
+    path('api/usuarios/', include(('users.urls', 'users'), namespace='users')),
 ]
-
 # Esto sirve los archivos en desarrollo
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
