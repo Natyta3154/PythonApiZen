@@ -6,28 +6,23 @@ import mimetypes
 import pymysql
 import ssl
 
+# 0. CONFIGURACIÓN INICIAL
+pymysql.install_as_MySQLdb()
+load_dotenv()
 
-# ESTO ES SOLO PARA DESARROLLO LOCAL
-# Evita el error de certificado SSL en Windows/Mac
+# Evita el error de certificado SSL en desarrollo local
 if os.environ.get('DEVELOPMENT', 'False') == 'True':
     ssl._create_default_https_context = ssl._create_unverified_context
 
-
-
-pymysql.install_as_MySQLdb()
-# 1. RUTAS Y VARIABLES DE ENTORNO
-load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-2-&=d=k!(hxe-=+8mrzjsw4!ou=hc)9liihg32bp#ci&z6eu7&')
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-default-key-change-it')
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
-
+# 1. SEGURIDAD Y HOSTS
 ALLOWED_HOSTS = [host.strip() for host in os.getenv('ALLOWED_HOSTS', '').split(',') if host.strip()]
-
-
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-# Forzar reconocimiento de archivos CSS/JS en Windows y Linux
+# Reconocimiento de tipos de archivo
 mimetypes.add_type("text/css", ".css", True)
 mimetypes.add_type("text/javascript", ".js", True)
 
@@ -55,7 +50,7 @@ INSTALLED_APPS = [
 # 3. MIDDLEWARE
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware', # Debe ir justo aquí
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -65,19 +60,18 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-# 4. CONFIGURACIÓN DE ALMACENAMIENTO (Actualizado para forzar lectura)
+# 4. CONFIGURACIÓN DE ALMACENAMIENTO (Cloudinary)
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME'),
     'API_KEY': os.getenv('CLOUDINARY_API_KEY'),
     'API_SECRET': os.getenv('CLOUDINARY_API_SECRET')
 }
 
-# Configuración de archivos estáticos
+# 5. ARCHIVOS ESTÁTICOS Y MULTIMEDIA
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [os.path.join(BASE_DIR, "static")]
 
-# Whitenoise & Cloudinary Storage
 STORAGES = {
     "default": {
         "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
@@ -87,17 +81,13 @@ STORAGES = {
     },
 }
 
-# Compatibilidad con apps que buscan la variable clásica
-STATICFILES_STORAGE = "whitenoise.storage.StaticFilesStorage"
-
 WHITENOISE_MANIFEST_STRICT = False
 WHITENOISE_USE_FINDERS = True
 
-# 6. BASE DE DATOS
+# 6. BASE DE DATOS (Lógica de prioridad)
 DATABASE_URL = os.getenv('DATABASE_URL')
 
 if DATABASE_URL:
-    # Si existe DATABASE_URL (usualmente en Producción/Vercel/Railways)
     DATABASES = {
         'default': dj_database_url.config(
             default=DATABASE_URL,
@@ -106,13 +96,12 @@ if DATABASE_URL:
         )
     }
 else:
-    # Si NO existe, usamos las variables individuales (Desarrollo local)
     DATABASES = {
         "default": {
             "ENGINE": os.getenv("DB_ENGINE", "django.db.backends.mysql"),
-            "NAME": os.getenv("DB_NAME"),
-            "USER": os.getenv("DB_USER"),
-            "PASSWORD": os.getenv("DB_PASSWORD"),
+            "NAME": os.getenv("DB_NAME", "sahum_db"),
+            "USER": os.getenv("DB_USER", "root"),
+            "PASSWORD": os.getenv("DB_PASSWORD", ""),
             "HOST": os.getenv("DB_HOST", "127.0.0.1"),
             "PORT": os.getenv("DB_PORT", "3306"),
             "OPTIONS": {
@@ -120,7 +109,6 @@ else:
             },
         }
     }
-
 
 # 7. TEMPLATES
 TEMPLATES = [
@@ -139,7 +127,7 @@ TEMPLATES = [
     },
 ]
 
-# 8. SEGURIDAD Y COOKIES
+# 8. SEGURIDAD, CORS Y COOKIES
 CORS_ALLOW_CREDENTIALS = True
 
 if not DEBUG:
@@ -161,51 +149,23 @@ else:
 CSRF_COOKIE_HTTPONLY = False
 SESSION_COOKIE_HTTPONLY = True
 
-
-# --- CORS para Vercel (PRODUCCIÓN) ---
-CORS_ALLOW_METHODS = [
-    "GET",
-    "POST",
-    "PUT",
-    "PATCH",
-    "DELETE",
-    "OPTIONS",
-]
-
-CORS_ALLOW_HEADERS = [
-    "accept",
-    "authorization",
-    "content-type",
-    "user-agent",
-    "x-csrftoken",
-    "x-requested-with",
-    "withcredentials",
-]
-
-
-# Permitir orígenes desde variables de entorno
+# CORS Origins
 cors_origins = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173').split(',')
 CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins if origin.strip()]
 
 csrf_origins = os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173').split(',')
 CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in csrf_origins if origin.strip()]
 
-
-
-
-# # 8. CONFIGURACIÓN DE EMAIL de google
-# Configuración de email profesional
+# 9. CONFIGURACIÓN DE EMAIL
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-
-# Usamos os.getenv para buscar los valores sin mostrarlos
 EMAIL_HOST_USER = os.getenv('EMAIL_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_PASS')
-DEFAULT_FROM_EMAIL = f'Aroma Zen <{os.getenv("EMAIL_USER")}>'
+DEFAULT_FROM_EMAIL = f"Aroma Zen <{os.getenv('EMAIL_USER')}>"
 
-# 9. OTROS
+# 10. OTROS
 ROOT_URLCONF = 'core.urls'
 LANGUAGE_CODE = 'es-ar'
 TIME_ZONE = 'America/Argentina/Buenos_Aires'
@@ -214,8 +174,7 @@ USE_TZ = True
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MP_ACCESS_TOKEN = os.getenv('MP_ACCESS_TOKEN')
 
-
-# 10. JAZZMIN grafico de admin
+# 11. JAZZMIN (Admin UI)
 JAZZMIN_SETTINGS = {
     "site_title": "AromaZen Admin",
     "site_header": "AromaZen",
@@ -223,5 +182,5 @@ JAZZMIN_SETTINGS = {
     "welcome_sign": "Bienvenido al Panel de Control de AromaZen",
     "copyright": "AromaZen Ltd",
     "search_model": ["auth.User", "products.Product"],
-    "show_ui_builder": True, # Esto te permite cambiar colores en vivo
+    "show_ui_builder": True,
 }
