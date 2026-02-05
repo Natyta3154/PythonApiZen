@@ -139,9 +139,9 @@ if not DEBUG:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_SSL_REDIRECT = True
-    SECURE_HSTS_SECONDS = 31536000
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
+    #SECURE_HSTS_SECONDS = 31536000
+    #SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    #SECURE_HSTS_PRELOAD = True
 else:
     SESSION_COOKIE_SAMESITE = 'Lax'
     CSRF_COOKIE_SAMESITE = 'Lax'
@@ -151,6 +151,11 @@ else:
 
 CSRF_COOKIE_HTTPONLY = False
 SESSION_COOKIE_HTTPONLY = True
+
+# ESTO ES CLAVE: Si la sesión es "Session Cookie", se borra al cerrar el navegador.
+# Si quieres que dure más, puedes poner SESSION_COOKIE_AGE (en segundos).
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False # False hace que persista tras cerrar el navegador
+SESSION_COOKIE_AGE = 1209600 # 2 semanas en segundos
 
 # CORS Origins
 cors_origins = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173').split(',')
