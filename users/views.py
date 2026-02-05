@@ -12,7 +12,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import authenticate
 from django.contrib.auth import logout as django_logout
 import datetime
-
+from django.conf import settings
 
 # --- CLASE PARA SOLUCIONAR EL ERROR CSRF ---
 
@@ -28,9 +28,9 @@ class CsrfExemptSessionAuthentication(SessionAuthentication):
 COOKIE_SETTINGS = {
     'key': 'auth_token',
     'httponly': True,
-    'secure': False,  # Cambiar a True en producción (HTTPS)
-    'samesite': 'Lax',
-    'max_age': 60*60*24*7  # 7 días
+    'secure': not settings.DEBUG, # True si no estamos en modo debug
+    'samesite': 'None' if not settings.DEBUG else 'Lax', # None para Vercel
+    'max_age': 60*60*24*7
 }
 
 #registro de usuario
@@ -135,7 +135,11 @@ def logout_api(request):
 
     # 2. Borrado de Cookies (Mismos parámetros que usas en el Login)
     # Importante: El path '/' asegura que se borren globalmente
-    cookie_params = {'path': '/', 'samesite': 'Lax'}
+    cookie_params = {
+    'path': '/', 
+    'samesite': 'None' if not settings.DEBUG else 'Lax',
+    'secure': not settings.DEBUG
+}
     
     response.delete_cookie('auth_token', **cookie_params)
     response.delete_cookie('csrftoken', **cookie_params)
