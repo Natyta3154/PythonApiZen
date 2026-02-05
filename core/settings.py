@@ -94,29 +94,32 @@ WHITENOISE_MANIFEST_STRICT = False
 WHITENOISE_USE_FINDERS = True
 
 # 6. BASE DE DATOS
-DATABASES = {
-    'default': dj_database_url.config(
-        default=os.getenv('DATABASE_URL'),
-        conn_max_age=600,
-        conn_health_checks=True,
-    )
-}
+DATABASE_URL = os.getenv('DATABASE_URL')
 
-if not DATABASES.get("default"):
-   DATABASES = {
-    "default": {
-        "ENGINE": os.getenv("DB_ENGINE"),
-        "NAME": os.getenv("DB_NAME"),
-        "USER": os.getenv("DB_USER"),
-        "PASSWORD": os.getenv("DB_PASSWORD"),
-        "HOST": os.getenv("DB_HOST"),
-        "PORT": os.getenv("DB_PORT"),
-        "OPTIONS": {
-            "charset": os.getenv("DB_CHARSET", "utf8mb4"),
-        },
+if DATABASE_URL:
+    # Si existe DATABASE_URL (usualmente en Producción/Vercel/Railways)
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
     }
-}
-
+else:
+    # Si NO existe, usamos las variables individuales (Desarrollo local)
+    DATABASES = {
+        "default": {
+            "ENGINE": os.getenv("DB_ENGINE", "django.db.backends.mysql"),
+            "NAME": os.getenv("DB_NAME"),
+            "USER": os.getenv("DB_USER"),
+            "PASSWORD": os.getenv("DB_PASSWORD"),
+            "HOST": os.getenv("DB_HOST", "127.0.0.1"),
+            "PORT": os.getenv("DB_PORT", "3306"),
+            "OPTIONS": {
+                "charset": os.getenv("DB_CHARSET", "utf8mb4"),
+            },
+        }
+    }
 
 
 # 7. TEMPLATES
