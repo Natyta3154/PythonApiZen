@@ -148,16 +148,26 @@ def logout_api(request):
 
 # Obtener datos del usuario actual
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@authentication_classes([CsrfExemptSessionAuthentication]) # Para que reconozca la sesión de la cookie
+@permission_classes([AllowAny]) 
 def me(request):
     """
-    Devuelve los datos del usuario actual verificando el token/sesión.
+    Esta es la vista que usa tu Front al cargar la página de Perfil.
     """
+    if request.user.is_authenticated:
+        return Response({
+            'username': request.user.username,
+            'email': request.user.email,
+            'first_name': request.user.first_name,
+            'last_name': request.user.last_name,
+            'is_staff': request.user.is_staff,
+            'authenticated': True
+        }, status=status.HTTP_200_OK)
+    
     return Response({
-        'username': request.user.username,
-        'email': request.user.email,
-        'is_staff': request.user.is_staff  # Permite al front persistir el rol tras refrescar
-    })
+        'authenticated': False,
+        'message': 'No hay sesión activa'
+    }, status=status.HTTP_200_OK)
 
 @api_view(['PUT'])
 # AGREGAMOS ESTO: Es vital para que herede la exención de CSRF y reconozca la sesión
@@ -166,7 +176,7 @@ def me(request):
 def actualizar_perfil(request):
     user = request.user
     data = request.data
-    
+
     # LOG DE INICIO DE OPERACIÓN [2026-01-19]
     print(f"--- [LOG PERFIL] Intento de actualización: Usuario ID {user.id} ({user.username}) ---")
 
@@ -204,23 +214,4 @@ def actualizar_perfil(request):
 
 
 
-@api_view(['GET'])
-@permission_classes([AllowAny]) # Ahora permitimos que la petición llegue siempre
-def me(request):
-    # Verificamos manualmente si está logueado
-    if request.user.is_authenticated:
-        return Response({
-            'username': request.user.username,
-            'email': request.user.email,
-            'first_name': request.user.first_name,
-            'last_name': request.user.last_name,
-            'is_staff': request.user.is_staff,
-            'authenticated': True # Un extra para tu frontend
-        })
-    
-    # Si no está logueado, devolvemos un 200 (OK) pero avisando que no hay usuario
-    # Esto quita el error Forbidden (403) de tu consola
-    return Response({
-        'authenticated': False,
-        'message': 'No hay sesión activa'
-    }, status=200)
+
