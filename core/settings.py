@@ -192,3 +192,14 @@ JAZZMIN_SETTINGS = {
     "search_model": ["auth.User", "products.Product"],
     "show_ui_builder": True,
 }
+
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',  # Para login por Token
+        'rest_framework.authentication.SessionAuthentication', # ¡VITAL para que reconozca tu sesión del frontend!
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated', # Protege tus rutas por defecto
+    ]
+}
