@@ -193,6 +193,9 @@ JAZZMIN_SETTINGS = {
     "show_ui_builder": True,
 }
 
+CORS_ALLOWED_ORIGINS = [
+    "https://front-aroma-zen.vercel.app", 
+]
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
