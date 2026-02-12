@@ -134,16 +134,17 @@ TEMPLATES = [
 CORS_ALLOW_CREDENTIALS = True
 
 if not DEBUG:
+    # PRODUCCIÓN (Railway + Vercel)
     SESSION_COOKIE_SAMESITE = 'None'
     CSRF_COOKIE_SAMESITE = 'None'
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_SSL_REDIRECT = True
-    #SECURE_HSTS_SECONDS = 31536000
-    #SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    #SECURE_HSTS_PRELOAD = True
 else:
-    SESSION_COOKIE_SAMESITE = 'Lax'
+    # DESARROLLO (Localhost)
+    # Importante: Si usas 'None', DEBE ser Secure=True, 
+    # pero para que funcione en Localhost sin HTTPS suele usarse 'Lax'
+    SESSION_COOKIE_SAMESITE = 'Lax' 
     CSRF_COOKIE_SAMESITE = 'Lax'
     SESSION_COOKIE_SECURE = False
     CSRF_COOKIE_SECURE = False
@@ -151,7 +152,6 @@ else:
 
 CSRF_COOKIE_HTTPONLY = False
 SESSION_COOKIE_HTTPONLY = True
-
 # ESTO ES CLAVE: Si la sesión es "Session Cookie", se borra al cerrar el navegador.
 # Si quieres que dure más, puedes poner SESSION_COOKIE_AGE (en segundos).
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False # False hace que persista tras cerrar el navegador
