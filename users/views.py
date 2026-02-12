@@ -13,6 +13,8 @@ from django.contrib.auth import authenticate
 from django.contrib.auth import logout as django_logout
 import datetime
 from django.conf import settings
+from .authentication import CookieTokenAuthentication, CsrfExemptSessionAuthentication
+
 
 # --- CLASE PARA SOLUCIONAR EL ERROR CSRF ---
 
@@ -28,9 +30,10 @@ class CsrfExemptSessionAuthentication(SessionAuthentication):
 COOKIE_SETTINGS = {
     'key': 'auth_token',
     'httponly': True,
-    'secure': not settings.DEBUG, # True si no estamos en modo debug
-    'samesite': 'None' if not settings.DEBUG else 'Lax', # None para Vercel
-    'max_age': 60*60*24*7
+    'secure': True,  # 👈 DEBE ser True para que SameSite='None' funcione
+    'samesite': 'None', # 👈 Obligatorio para Vercel -> Railway
+    'max_age': 60*60*24*7,
+    'path': '/', # Asegura que esté disponible en toda la API
 }
 
 #registro de usuario
@@ -152,7 +155,7 @@ def logout_api(request):
 
 # Obtener datos del usuario actual
 @api_view(['GET'])
-@authentication_classes([CsrfExemptSessionAuthentication]) # Para que reconozca la sesión de la cookie
+@authentication_classes([CookieTokenAuthentication, CsrfExemptSessionAuthentication]) # Para que reconozca la sesión de la cookie
 @permission_classes([AllowAny]) 
 def me(request):
     """
