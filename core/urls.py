@@ -33,7 +33,7 @@ urlpatterns = [
     path('', home),
     path('admin/', admin.site.urls),
     # Cambiamos 'api/' por 'api/productos/'
-    path('api/productos/', include(('products.urls', 'products'), namespace='products')),
+    path('api/', include(('products.urls', 'products'), namespace='products')),
     path('api/blog/', include(('blog.urls', 'blog'), namespace='blog')),
     path('api/usuarios/', include(('users.urls', 'users'), namespace='users')),
 ]
