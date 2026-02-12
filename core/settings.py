@@ -50,8 +50,8 @@ INSTALLED_APPS = [
 # 3. MIDDLEWARE
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -81,7 +81,7 @@ STORAGES = {
     },
 }
 
-# --- AÑADE ESTA LÍNEA PARA COMPATIBILIDAD CON CLOUDINARY ---
+# --- AÑADIR ESTA LÍNEA PARA COMPATIBILIDAD CON CLOUDINARY ---
 STATICFILES_STORAGE = "whitenoise.storage.StaticFilesStorage"
 
 WHITENOISE_MANIFEST_STRICT = False
