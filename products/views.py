@@ -1,3 +1,4 @@
+from django.db import transaction
 import mercadopago
 import datetime
 import traceback
@@ -54,7 +55,7 @@ def lista_productos_destacados(request): # Corregido el nombre (agregada la 'i')
     return Response(serializer.data)
 
 # --- PROCESO DE COMPRA Y LOGS ---
-
+# ----En realizar_compra_carrito: Creas el pedido, descuentas el stock y generas el primer Log Persistente en MySQL y en consola. Aquí el pedido nace como PENDIENTE.-----
 @api_view(['POST'])
 @authentication_classes([CookieTokenAuthentication, CsrfExemptSessionAuthentication])
 @permission_classes([IsAuthenticated])
@@ -92,11 +93,13 @@ def realizar_compra_carrito(request):
 
 from .utils import enviar_confirmacion_compra # Importa la función que creamos
 
+
+
+#---En webhook_mercadopago: Cuando el pago se aprueba, el servidor de Mercado Pago avisa a tu API. Tu código busca el pedido por external_reference, lo marca como PAGADO y actualiza el log indicando que el email fue enviado.
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def webhook_mercadopago(request):
     data = request.data
-    # Obtenemos el ID del pago, ya sea por el cuerpo (POST) o por parámetros de URL (GET)
     payment_id = data.get("data", {}).get("id") or request.GET.get('data.id')
     
     if data.get("type") == "payment" and payment_id:
@@ -108,38 +111,41 @@ def webhook_mercadopago(request):
                 pedido_id = payment_info["response"]["external_reference"]
                 pedido = Pedido.objects.get(id=pedido_id)
                 
-                # Solo procesamos si el pedido no está pagado aún (evita duplicados)
                 if pedido.estado in ['PENDIENTE', 'EN_PROCESO']:
-                    pedido.estado = 'PAGADO'
-                    pedido.save()
+                    # --- NUEVA LÓGICA DE STOCK ---
+                    with transaction.atomic():
+                        # Buscamos los items que el usuario compró en este pedido
+                        items_pedido = ItemPedido.objects.filter(pedido=pedido)
+                        for item in items_pedido:
+                            producto = item.producto
+                            # Descontamos el stock aquí, al confirmar el pago
+                            producto.stock -= item.cantidad
+                            producto.save()
+                            print(f"[LOG STOCK] Descontados {item.cantidad} de {producto.nombre}")
+
+                        # Ahora sí, marcamos como pagado
+                        pedido.estado = 'PAGADO'
+                        pedido.save()
                     
-                    # 1. ACTUALIZACIÓN DEL LOG DE COMPRA PERSISTENTE
+                    # 1. ACTUALIZACIÓN DEL LOG (Instrucción 2026-01-06)
                     log = CompraLog.objects.filter(referencia_pago=str(pedido.id)).first()
-                    log_msg = " [PAGO APROBADO MP]"
+                    log_msg = " [PAGO APROBADO Y STOCK ACTUALIZADO]"
                     
-                    # 2. INTENTO DE ENVÍO DE EMAIL PROFESIONAL
+                    # 2. ENVÍO DE EMAIL
                     try:
                         enviar_confirmacion_compra(pedido)
                         log_msg += " [EMAIL ENVIADO]"
-                        print(f"--- [LOG] EMAIL ENVIADO EXITOSAMENTE A {pedido.usuario.email} ---")
                     except Exception as e_mail:
                         log_msg += f" [ERROR EMAIL: {str(e_mail)}]"
-                        print(f"--- [ERROR LOG] Falló el envío de mail: {str(e_mail)} ---")
 
-                    # Guardamos todo el historial en el detalle del log
                     if log:
                         log.detalle_log += log_msg
                         log.save()
 
-                    print(f"--- [LOG] COMPRA #{pedido_id} FINALIZADA CON ÉXITO ---")
-
         except Exception as e:
             print(f"Error crítico en Webhook: {str(e)}")
-            # No devolvemos error a MP para evitar que reintente infinitamente si es un error de nuestro código
     
-    # Mercado Pago espera siempre un 200 o 201 para dejar de notificar
     return Response(status=200)
-
 @api_view(['GET'])
 @authentication_classes([CookieTokenAuthentication, CsrfExemptSessionAuthentication])
 @permission_classes([IsAuthenticated])

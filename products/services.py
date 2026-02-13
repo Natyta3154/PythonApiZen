@@ -48,8 +48,8 @@ class CompraService:
                 )
 
                 # Descontar stock
-                producto.stock -= cant
-                producto.save()
+                #producto.stock -= cant
+                #producto.save()
 
                 # Preparar item para Mercado Pago
                 items_mp.append({
@@ -69,12 +69,12 @@ class CompraService:
                 "external_reference": str(nuevo_pedido.id),
                 "back_urls": {
                     # ASEGÚRATE DE QUE ESTAS URLS SEAN ACCESIBLES O ESTÉN BIEN FORMADAS
-                    "success": "https://www.tu-sitio.com/success", 
-                    "failure": "https://www.tu-sitio.com/failure",
-                    "pending": "https://www.tu-sitio.com/pending"
+                    "success": "https://front-aroma-zen.vercel.app/success", 
+                    "failure": "https://front-aroma-zen.vercel.app/cart",
+                    "pending": "https://front-aroma-zen.vercel.app/pending"
                 },
                 "auto_return": "approved", # Requiere que 'success' esté definido arriba
-                "notification_url": "https://tu-dominio.com/api/productos/webhook/mercadopago/", # Opcional si usas IPN
+                "notification_url": "https://aromazen.up.railway.app/api/productos/webhook/mercadopago/", # Opcional si usas IPN
             }
             
             # Llamada al SDK
