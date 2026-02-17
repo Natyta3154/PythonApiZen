@@ -5,11 +5,11 @@ from rest_framework import status
 from .models import Post, Reseña
 from products.models import ItemPedido, Producto
 from products.serializers import PostSerializer, ReseñaSerializer
-from users.views import CsrfExemptSessionAuthentication # Importamos tu clase de seguridad
+from users.views import CookieTokenAuthentication 
 
 # 1. GESTIÓN DE POSTS (Listar y Crear)
 @api_view(['GET', 'POST'])
-@authentication_classes([CsrfExemptSessionAuthentication])
+@authentication_classes([CookieTokenAuthentication])
 @permission_classes([AllowAny]) # GET es libre, POST se valida adentro
 def gestionar_posts(request):
     if request.method == 'GET':
@@ -49,7 +49,7 @@ def lista_testimonios(request):
 
 # 4. CREAR RESEÑA (Con validación de compra de AromaZen)
 @api_view(['POST'])
-@authentication_classes([CsrfExemptSessionAuthentication])
+@authentication_classes([CookieTokenAuthentication])
 @permission_classes([IsAuthenticated])
 def crear_reseña(request, producto_id):
     # Verificamos que el producto exista primero

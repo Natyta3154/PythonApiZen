@@ -13,7 +13,7 @@ from rest_framework import status
 from rest_framework.authentication import SessionAuthentication
 
 # Autenticación personalizada
-from users.authentication import CookieTokenAuthentication, CsrfExemptSessionAuthentication
+from users.authentication import CookieTokenAuthentication
 
 # MODELOS LOCALES (Solo de productos)
 from .models import CompraLog, ItemPedido, Producto, Pedido, Consulta, Categoria
@@ -57,7 +57,7 @@ def lista_productos_destacados(request): # Corregido el nombre (agregada la 'i')
 # --- PROCESO DE COMPRA Y LOGS ---
 # ----En realizar_compra_carrito: Creas el pedido, descuentas el stock y generas el primer Log Persistente en MySQL y en consola. Aquí el pedido nace como PENDIENTE.-----
 @api_view(['POST'])
-@authentication_classes([CookieTokenAuthentication, CsrfExemptSessionAuthentication])
+@authentication_classes([CookieTokenAuthentication])
 @permission_classes([IsAuthenticated])
 def realizar_compra_carrito(request):
     items = request.data.get('items', [])
@@ -147,7 +147,7 @@ def webhook_mercadopago(request):
     
     return Response(status=200)
 @api_view(['GET'])
-@authentication_classes([CookieTokenAuthentication, CsrfExemptSessionAuthentication])
+@authentication_classes([CookieTokenAuthentication])
 @permission_classes([IsAuthenticated])
 def mis_compras(request):
     pedidos = Pedido.objects.filter(usuario=request.user).order_by('-fecha_venta')
