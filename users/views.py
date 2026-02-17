@@ -45,11 +45,6 @@ def login_api(request):
     Login con email o username + contraseña (sessionid).
 
     """
-    print("HEADERS:", request.headers)
-    print("BODY RAW:", request.body.decode())
-    print("DATA PARSED:", request.data)
-
-    print("DATA RECEIVED:", request.data)
     email = request.data.get("email")  # puede ser email o username
     password = request.data.get("password")
 
