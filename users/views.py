@@ -20,6 +20,7 @@ COOKIE_SETTINGS = {
     "samesite": "None",      # obligatorio para Vercel -> Railway
     "max_age": 60 * 60 * 24 * 7,
     "path": "/",
+    "domain": ".up.railway.app",           # Se ajustará dinámicamente en producción
 }
 
 
