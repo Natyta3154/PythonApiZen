@@ -3,42 +3,37 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth.models import User
-from django.contrib.auth import login
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
-from rest_framework.authentication import SessionAuthentication
 from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth import logout as django_logout
-import datetime
+from django.contrib.auth import authenticate
 from django.conf import settings
 from .authentication import CookieTokenAuthentication
 
 
-# ================= CSRF EXEMPT SESSION =================
-class CsrfExemptSessionAuthentication(SessionAuthentication):
-    def enforce_csrf(self, request):
-        return None
+# ================= CONFIG COOKIE =================
 
-
-# ================= COOKIE CONFIG =================
 COOKIE_SETTINGS = {
+    "key": "auth_token",
     "httponly": True,
-    "secure": True,
-    "samesite": "None",
+    "secure": True,          # obligatorio en Railway
+    "samesite": "None",      # obligatorio para Vercel -> Railway
     "max_age": 60 * 60 * 24 * 7,
     "path": "/",
 }
 
 
 def set_auth_cookie(response, token):
-    response.set_cookie("auth_token", token, **COOKIE_SETTINGS)
+    response.set_cookie(value=token, **COOKIE_SETTINGS)
     return response
 
 
 # ================= REGISTRO =================
+
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def registro_api(request):
+
     username = request.data.get("username", "").strip()
     password = request.data.get("password", "").strip()
     email = request.data.get("email", "").strip().lower()
@@ -66,64 +61,62 @@ def registro_api(request):
 
 
 # ================= LOGIN =================
+
 class CustomLogin(ObtainAuthToken):
-    authentication_classes = [CsrfExemptSessionAuthentication]
+    permission_classes = [AllowAny]
+    authentication_classes = []  # importante: sin sesión
 
     def post(self, request, *args, **kwargs):
-        data = request.data.copy()
-        email = data.get("email")
 
-        if email:
-            user_obj = User.objects.filter(email=email).first()
-            if not user_obj:
-                return Response({"error": "No existe un usuario con ese email"}, status=status.HTTP_400_BAD_REQUEST)
-            data["username"] = user_obj.username
+        email = request.data.get("email")
+        password = request.data.get("password")
 
-        serializer = self.serializer_class(data=data, context={"request": request})
-        if not serializer.is_valid():
-            return Response({"error": "Credenciales inválidas"}, status=status.HTTP_400_BAD_REQUEST)
+        if not email or not password:
+            return Response({"error": "Email y contraseña requeridos"}, status=400)
 
-        user = serializer.validated_data["user"]
+        user = User.objects.filter(email=email).first()
+        if not user:
+            return Response({"error": "Usuario no encontrado"}, status=400)
+
+        user = authenticate(username=user.username, password=password)
+        if not user:
+            return Response({"error": "Contraseña incorrecta"}, status=400)
+
         token, _ = Token.objects.get_or_create(user=user)
-        login(request, user)
 
         response = Response({
             "message": "Login exitoso",
             "username": user.username,
             "email": user.email,
             "is_staff": user.is_staff
-        }, status=status.HTTP_200_OK)
+        })
 
         return set_auth_cookie(response, token.key)
 
 
 # ================= LOGOUT =================
+
 @csrf_exempt
-@api_view(["GET", "POST"])
+@api_view(["POST"])
 @permission_classes([AllowAny])
 def logout_api(request):
-    django_logout(request)
 
-    response = Response({"status": "success", "message": "Sesión cerrada"}, status=status.HTTP_200_OK)
+    response = Response({"status": "success", "message": "Sesión cerrada"})
 
-    cookie_params = {
-        "path": "/",
-        "samesite": "None" if not settings.DEBUG else "Lax",
-        "secure": not settings.DEBUG,
-    }
-
-    response.delete_cookie("auth_token", **cookie_params)
-    response.delete_cookie("csrftoken", **cookie_params)
-    response.delete_cookie("sessionid", **cookie_params)
+    response.delete_cookie("auth_token", path="/", samesite="None", secure=True)
+    response.delete_cookie("csrftoken", path="/", samesite="None", secure=True)
+    response.delete_cookie("sessionid", path="/", samesite="None", secure=True)
 
     return response
 
 
 # ================= ME =================
+
 @api_view(["GET"])
-@authentication_classes([CookieTokenAuthentication, CsrfExemptSessionAuthentication])
+@authentication_classes([CookieTokenAuthentication])
 @permission_classes([AllowAny])
 def me(request):
+
     if request.user.is_authenticated:
         return Response({
             "username": request.user.username,
@@ -134,14 +127,16 @@ def me(request):
             "authenticated": True
         })
 
-    return Response({"authenticated": False, "message": "No hay sesión activa"})
+    return Response({"authenticated": False})
 
 
 # ================= ACTUALIZAR PERFIL =================
+
 @api_view(["PUT"])
-@authentication_classes([CookieTokenAuthentication, CsrfExemptSessionAuthentication])
+@authentication_classes([CookieTokenAuthentication])
 @permission_classes([IsAuthenticated])
 def actualizar_perfil(request):
+
     user = request.user
     data = request.data
 
@@ -164,5 +159,9 @@ def actualizar_perfil(request):
             "last_name": user.last_name,
             "is_staff": user.is_staff
         })
+
     except Exception:
-        return Response({"error": "No se pudo guardar la información"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {"error": "No se pudo guardar la información"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
