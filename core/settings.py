@@ -29,35 +29,49 @@ mimetypes.add_type("text/javascript", ".js", True)
 # 2. APLICACIONES
 INSTALLED_APPS = [
     'jazzmin',
-    'cloudinary_storage',
+
+    # Django core
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
+
+    # terceros
     'rest_framework',
     'corsheaders',
     'cloudinary',
+    'cloudinary_storage',
 
+    # apps
     'users',
     'products',
     'blog',
 ]
 
+
 # 3. MIDDLEWARE
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
+
+    # WhiteNoise debe ir justo después de security
     'whitenoise.middleware.WhiteNoiseMiddleware',
+
+    # CORS debe ir ANTES de CommonMiddleware
+    'corsheaders.middleware.CorsMiddleware',
+
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
+
+    # CSRF después de sessions
     'django.middleware.csrf.CsrfViewMiddleware',
+
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
 
 # 4. CONFIGURACIÓN DE ALMACENAMIENTO (Cloudinary)
 CLOUDINARY_STORAGE = {
@@ -198,7 +212,7 @@ CORS_ALLOWED_ORIGINS = [
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        "users.authentication.CookieTokenAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.AllowAny",

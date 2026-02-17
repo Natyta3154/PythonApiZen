@@ -12,8 +12,6 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.authentication import SessionAuthentication
 
-# Autenticación personalizada
-from users.authentication import CookieTokenAuthentication
 
 # MODELOS LOCALES (Solo de productos)
 from .models import CompraLog, ItemPedido, Producto, Pedido, Consulta, Categoria
@@ -57,7 +55,6 @@ def lista_productos_destacados(request): # Corregido el nombre (agregada la 'i')
 # --- PROCESO DE COMPRA Y LOGS ---
 # ----En realizar_compra_carrito: Creas el pedido, descuentas el stock y generas el primer Log Persistente en MySQL y en consola. Aquí el pedido nace como PENDIENTE.-----
 @api_view(['POST'])
-@authentication_classes([CookieTokenAuthentication])
 @permission_classes([IsAuthenticated])
 def realizar_compra_carrito(request):
     items = request.data.get('items', [])
@@ -96,6 +93,7 @@ from .utils import enviar_confirmacion_compra # Importa la función que creamos
 
 
 #---En webhook_mercadopago: Cuando el pago se aprueba, el servidor de Mercado Pago avisa a tu API. Tu código busca el pedido por external_reference, lo marca como PAGADO y actualiza el log indicando que el email fue enviado.
+@csrf_exempt
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def webhook_mercadopago(request):
@@ -147,22 +145,16 @@ def webhook_mercadopago(request):
     
     return Response(status=200)
 @api_view(['GET'])
-@authentication_classes([CookieTokenAuthentication])
 @permission_classes([IsAuthenticated])
 def mis_compras(request):
     pedidos = Pedido.objects.filter(usuario=request.user).order_by('-fecha_venta')
     serializer = HistorialSerializer(pedidos, many=True)
     return Response(serializer.data)
 
-# --- CONSULTAS ---
+ 
 
-class UnsafeSessionAuthentication(SessionAuthentication):
-    def enforce_csrf(self, request):
-        return 
 
-@csrf_exempt
 @api_view(['POST'])
-@authentication_classes([UnsafeSessionAuthentication])
 @permission_classes([AllowAny])
 def enviar_consulta(request):
     serializer = ConsultaSerializer(data=request.data)
