@@ -1,20 +1,24 @@
-from rest_framework.authentication import TokenAuthentication, SessionAuthentication
+from rest_framework.authentication import BaseAuthentication
+from rest_framework.authtoken.models import Token
+from django.contrib.auth.models import AnonymousUser
 
-class CookieTokenAuthentication(TokenAuthentication):
+
+class CookieTokenAuthentication(BaseAuthentication):
     """
-    Traductor: Toma el token de la cookie 'auth_token' (del login)
-    y lo valida para que request.user sea el usuario real.
+    Autenticación segura basada en cookie httpOnly.
+    Lee auth_token desde el navegador y autentica al usuario.
     """
+
     def authenticate(self, request):
-        token_key = request.COOKIES.get('auth_token')
+
+        token_key = request.COOKIES.get("auth_token")
+
         if not token_key:
             return None
-        return self.authenticate_credentials(token_key)
 
-class CsrfExemptSessionAuthentication(SessionAuthentication):
-    """
-    Desactiva la verificación CSRF para permitir peticiones POST 
-    desde el frontend de React (localhost:5173).
-    """
-    def enforce_csrf(self, request):
-        return None
+        try:
+            token = Token.objects.select_related("user").get(key=token_key)
+        except Token.DoesNotExist:
+            return None
+
+        return (token.user, token)
