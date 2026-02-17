@@ -38,7 +38,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     
     'rest_framework',
-    'rest_framework.authtoken',
     'corsheaders',
     'cloudinary',
 
@@ -199,10 +198,9 @@ CORS_ALLOWED_ORIGINS = [
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication',  # Para login por Token
-        'rest_framework.authentication.SessionAuthentication', # ¡VITAL para que reconozca tu sesión del frontend!
+        'rest_framework.authentication.SessionAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated', # Protege tus rutas por defecto
+        'rest_framework.permissions.IsAuthenticated',
     ]
 }
