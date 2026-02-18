@@ -1,3 +1,4 @@
+import threading
 from django.db import transaction
 import mercadopago
 import datetime
@@ -163,42 +164,61 @@ def mis_compras(request):
  
 
 
+def enviar_mails_asincronos(consulta_data):
+    """
+    Función que corre en un hilo separado.
+    Incluso si Gmail falla, el servidor principal no se entera.
+    """
+    try:
+        # 1. Mail para el Administrador (Herny)
+        send_mail(
+            subject=f"📩 Nueva consulta: {consulta_data['asunto']}",
+            message=f"Nombre: {consulta_data['nombre']}\n"
+                    f"Email: {consulta_data['email']}\n\n"
+                    f"Mensaje:\n{consulta_data['mensaje']}",
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[settings.EMAIL_HOST_USER], # Te llega a herny3154@gmail.com
+            fail_silently=False,
+        )
+
+        # 2. Mail de cortesía para el Cliente
+        send_mail(
+            subject="✨ Recibimos tu consulta - Aroma Zen",
+            message=f"Hola {consulta_data['nombre']},\n\n"
+                    f"Gracias por contactarnos. Hemos recibido tu mensaje sobre '{consulta_data['asunto']}' "
+                    f"y te responderemos a la brevedad.\n\n"
+                    f"Paz y luz,\nEl equipo de Aroma Zen.",
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[consulta_data['email']],
+            fail_silently=False,
+        )
+    except Exception as e:
+        # Esto solo se verá en los logs de Railway, no rompe la web
+        print(f"❌ Error enviando mails de fondo: {str(e)}")
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def enviar_consulta(request):
     serializer = ConsultaSerializer(data=request.data)
     if serializer.is_valid():
-        consulta = serializer.save()  # Registro en Base de Datos (Admin)
+        # ✅ GUARDADO EN BASE DE DATOS (ADMIN)
+        consulta = serializer.save()
 
-        # 1. NOTIFICACIÓN PARA TI (Usando tu config de Gmail)
-        try:
-            send_mail(
-                subject=f"📩 Nueva consulta de {consulta.nombre}: {consulta.asunto}",
-                message=f"Has recibido una nueva consulta en AromaZen:\n\n"
-                        f"De: {consulta.nombre} ({consulta.email})\n"
-                        f"Mensaje:\n{consulta.mensaje}",
-                from_email=settings.DEFAULT_FROM_EMAIL, # Usa os.getenv('EMAIL_USER')
-                recipient_list=[settings.DEFAULT_FROM_EMAIL], # Te llega a tu propio mail
-                fail_silently=True,
-            )
-        except Exception as e:
-            print(f"Error notificando al admin: {e}")
+        # ✅ PREPARAR DATOS PARA EL HILO
+        datos_mail = {
+            'nombre': consulta.nombre,
+            'email': consulta.email,
+            'asunto': consulta.asunto,
+            'mensaje': consulta.mensaje
+        }
 
-        # 2. RESPUESTA AUTOMÁTICA (Toque Zen para el cliente)
-        try:
-            send_mail(
-                subject="✨ Recibimos tu consulta - AromaZen",
-                message=f"Hola {consulta.nombre},\n\n"
-                        f"Gracias por contactarte. Hemos recibido tu mensaje sobre '{consulta.asunto}' "
-                        f"y te responderemos a la brevedad.\n\n"
-                        f"Paz y luz,\nEl equipo de AromaZen.",
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[consulta.email], # Le llega al mail que el cliente puso en el form
-                fail_silently=True,
-            )
-        except Exception as e:
-            print(f"Error enviando confirmación al cliente: {e}")
+        # ✅ LANZAR ENVÍO DE MAILS EN SEGUNDO PLANO
+        # El usuario recibe el 201 Created de inmediato
+        thread = threading.Thread(target=enviar_mails_asincronos, args=(datos_mail,))
+        thread.start()
 
-        return Response({"mensaje": "Consulta enviada y confirmada por email."}, status=201)
+        return Response({
+            "mensaje": "¡Consulta enviada con éxito! Revisa tu casilla de correo."
+        }, status=status.HTTP_201_CREATED)
     
-    return Response(serializer.errors, status=400)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
