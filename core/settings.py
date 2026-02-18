@@ -155,6 +155,15 @@ CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins_env if origin.
 VERCEL_URL = "https://front-aroma-zen.vercel.app"
 if VERCEL_URL not in CORS_ALLOWED_ORIGINS:
     CORS_ALLOWED_ORIGINS.append(VERCEL_URL)
+    CORS_ALLOWED_ORIGINS.append(f"{VERCEL_URL}/") # Agregamos la versión con barra
+
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://front-aroma-zen.vercel.app",
+    "https://aromazen.up.railway.app" # Tu propia URL de Railway también
+]
+
+
 
 # IMPORTANTE: CSRF_TRUSTED_ORIGINS debe ser igual a los orígenes permitidos
 CSRF_TRUSTED_ORIGINS = [origin for origin in CORS_ALLOWED_ORIGINS]
