@@ -79,19 +79,28 @@ class PedidoAdmin(admin.ModelAdmin):
         )
     estado_badge.short_description = "Visualización"
 
+
 # --- AUDITORÍA Y LOGS DE COMPRA ---
 @admin.register(CompraLog)
 class CompraLogAdmin(admin.ModelAdmin):
-    list_display = ('id', 'usuario', 'monto', 'fecha_creacion', 'tipo_log_badge')
+    # ✅ Agregamos 'referencia_pago' a la lista principal
+    list_display = ('id', 'usuario', 'referencia_display', 'monto', 'fecha_creacion', 'tipo_log_badge')
     list_filter = ('fecha_creacion',)
-    readonly_fields = ('usuario', 'pedido', 'detalle_log', 'monto', 'fecha_creacion')
+    search_fields = ('referencia_pago', 'usuario__username') # Permite buscar por el ID de MP
+    readonly_fields = ('referencia_pago', 'usuario', 'pedido', 'detalle_log', 'monto', 'fecha_creacion')
+
+    # ✨ Una función para que el ID de MP se vea más profesional
+    def referencia_display(self, obj):
+        if obj.referencia_pago and len(obj.referencia_pago) > 5:
+            return format_html('<code style="color: #2e6da4; font-weight: bold;">{}</code>', obj.referencia_pago)
+        return obj.referencia_pago or "-"
+    referencia_display.short_description = "Referencia MP"
 
     def tipo_log_badge(self, obj):
         return mark_safe(
             '<span style="background-color: #5bc0de; color: white; padding: 3px 8px; border-radius: 5px; font-size: 10px; font-weight: bold;">LOG SISTEMA</span>'
         )
     tipo_log_badge.short_description = "Categoría Log"
-
 # --- CONSULTAS ---
 @admin.register(Consulta)
 class ConsultaAdmin(admin.ModelAdmin):
