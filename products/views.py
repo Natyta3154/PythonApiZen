@@ -108,6 +108,7 @@ def webhook_mercadopago(request):
             
             if payment_info["status"] == 200 and payment_info["response"]["status"] == "approved":
                 pedido_id = payment_info["response"]["external_reference"]
+                payment_id_real = payment_info["response"]["id"]
                 pedido = Pedido.objects.get(id=pedido_id)
                 
                 if pedido.estado in ['PENDIENTE', 'EN_PROCESO']:
@@ -127,7 +128,14 @@ def webhook_mercadopago(request):
                         pedido.save()
                     
                     # 1. ACTUALIZACIÓN DEL LOG (Instrucción 2026-01-06)
+                    # Buscamos el log que creamos al inicio (que tiene el ID del pedido como referencia temporal)
                     log = CompraLog.objects.filter(referencia_pago=str(pedido.id)).first()
+                    if log:
+                        log.referencia_pago = str(payment_id_real)  # Actualizamos con el ID real de MP
+                        log.detalle_log += " [PAGO APROBADO]"
+                        log.save()
+
+
                     log_msg = " [PAGO APROBADO Y STOCK ACTUALIZADO]"
                     
                     # 2. ENVÍO DE EMAIL
