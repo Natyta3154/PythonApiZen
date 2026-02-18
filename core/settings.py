@@ -40,6 +40,7 @@ INSTALLED_APPS = [
 
     # terceros
     'rest_framework',
+    'rest_framework.authtoken',
     'corsheaders',
     'cloudinary',
     'cloudinary_storage',
