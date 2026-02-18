@@ -79,8 +79,10 @@ class PedidoAdmin(admin.ModelAdmin):
         )
     estado_badge.short_description = "Visualización"
 
-
 # --- AUDITORÍA Y LOGS DE COMPRA ---
+#--Auditoría y Resolución de Conflictos
+#Si un cliente te escribe diciendo: "Hice el pago en MercadoPago pero la página se me cerró y #no sé si se procesó", tú no tienes que adivinar. se busca en el admin de Django el último log creado con el ID del pedido como referencia temporal (que se creó al iniciar la compra) y se verifica si tiene la referencia de pago real de MercadoPago. Si no la tiene, se puede confirmar que el pago no se procesó. Si la tiene pero el estado no es "approved", se puede confirmar que el pago no se aprobó. Y si la tiene y el estado es "approved", se puede confirmar que el pago sí se aprobó, incluso si el cliente no llegó a ver la confirmación en pantalla. Esto te da una herramienta poderosa para resolver dudas y conflictos con información concreta y transparente.---
+
 @admin.register(CompraLog)
 class CompraLogAdmin(admin.ModelAdmin):
     # ✅ Agregamos 'referencia_pago' a la lista principal

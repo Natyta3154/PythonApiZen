@@ -5,13 +5,13 @@ import traceback
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 from .utils import enviar_confirmacion_compra
-# Rest Framework
+from django.core.mail import send_mail
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny 
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.authentication import TokenAuthentication, SessionAuthentication 
-
+import os
 
 # MODELOS LOCALES (Solo de productos)
 from .models import CompraLog, ItemPedido, Producto, Pedido, Consulta, Categoria
@@ -168,6 +168,37 @@ def mis_compras(request):
 def enviar_consulta(request):
     serializer = ConsultaSerializer(data=request.data)
     if serializer.is_valid():
-        serializer.save()
-        return Response({"mensaje": "Consulta enviada con éxito."}, status=201)
+        consulta = serializer.save()  # Registro en Base de Datos (Admin)
+
+        # 1. NOTIFICACIÓN PARA TI (Usando tu config de Gmail)
+        try:
+            send_mail(
+                subject=f"📩 Nueva consulta de {consulta.nombre}: {consulta.asunto}",
+                message=f"Has recibido una nueva consulta en AromaZen:\n\n"
+                        f"De: {consulta.nombre} ({consulta.email})\n"
+                        f"Mensaje:\n{consulta.mensaje}",
+                from_email=settings.DEFAULT_FROM_EMAIL, # Usa os.getenv('EMAIL_USER')
+                recipient_list=[settings.DEFAULT_FROM_EMAIL], # Te llega a tu propio mail
+                fail_silently=True,
+            )
+        except Exception as e:
+            print(f"Error notificando al admin: {e}")
+
+        # 2. RESPUESTA AUTOMÁTICA (Toque Zen para el cliente)
+        try:
+            send_mail(
+                subject="✨ Recibimos tu consulta - AromaZen",
+                message=f"Hola {consulta.nombre},\n\n"
+                        f"Gracias por contactarte. Hemos recibido tu mensaje sobre '{consulta.asunto}' "
+                        f"y te responderemos a la brevedad.\n\n"
+                        f"Paz y luz,\nEl equipo de AromaZen.",
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[consulta.email], # Le llega al mail que el cliente puso en el form
+                fail_silently=True,
+            )
+        except Exception as e:
+            print(f"Error enviando confirmación al cliente: {e}")
+
+        return Response({"mensaje": "Consulta enviada y confirmada por email."}, status=201)
+    
     return Response(serializer.errors, status=400)
