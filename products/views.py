@@ -10,7 +10,7 @@ from rest_framework.decorators import api_view, permission_classes, authenticati
 from rest_framework.permissions import IsAuthenticated, AllowAny 
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.authentication import SessionAuthentication
+from rest_framework.authentication import TokenAuthentication, SessionAuthentication 
 
 
 # MODELOS LOCALES (Solo de productos)
@@ -55,6 +55,7 @@ def lista_productos_destacados(request): # Corregido el nombre (agregada la 'i')
 # --- PROCESO DE COMPRA Y LOGS ---
 # ----En realizar_compra_carrito: Creas el pedido, descuentas el stock y generas el primer Log Persistente en MySQL y en consola. Aquí el pedido nace como PENDIENTE.-----
 @api_view(['POST'])
+@authentication_classes([TokenAuthentication, SessionAuthentication])
 @permission_classes([IsAuthenticated])
 def realizar_compra_carrito(request):
     items = request.data.get('items', [])
