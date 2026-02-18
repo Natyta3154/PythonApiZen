@@ -5,7 +5,7 @@ from rest_framework import status
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from django.views.decorators.csrf import csrf_exempt
-from rest_framework.authtoken.models import Token # <--- IMPORTANTE
+from rest_framework.authtoken.models import Token
 
 # ================= REGISTRO =================
 @api_view(["POST"])
@@ -58,12 +58,12 @@ def login_api(request):
         return Response({"error": "Contraseña incorrecta"}, status=400)
 
     # Generamos o recuperamos el Token
-    token, _ = Token.objects.get_or_create(user=user)
+    token_obj, _ = Token.objects.get_or_create(user=user)
     login(request, user) 
 
     return Response({
         "message": "Login exitoso",
-        "token": token.key, # ✅ Enviamos token
+        "token": token_obj.key, # ✅ Enviamos token
         "username": user.username,
         "email": user.email,
         "is_staff": user.is_staff
