@@ -208,10 +208,11 @@ JAZZMIN_SETTINGS = {
     "show_ui_builder": True,
 }
 
-# 12. REST FRAMEWORK (Movido al final y sin re-declarar CORS)
+# 12. REST FRAMEWORK
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework.authentication.SessionAuthentication",
+        "rest_framework.authentication.TokenAuthentication",   # ✅ Agregado: Acepta el "Token ..." de Axios
+        "rest_framework.authentication.SessionAuthentication", # Mantiene el admin funcional
     ),
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.AllowAny",
