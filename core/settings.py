@@ -146,6 +146,18 @@ TEMPLATES = [
 # 8. SEGURIDAD, CORS Y COOKIES
 CORS_ALLOW_CREDENTIALS = True
 
+# Obtener orígenes del .env
+cors_origins_env = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173').split(',')
+CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins_env if origin.strip()]
+
+# Asegurar la URL de Vercel manualmente si no está en el .env
+VERCEL_URL = "https://front-aroma-zen.vercel.app"
+if VERCEL_URL not in CORS_ALLOWED_ORIGINS:
+    CORS_ALLOWED_ORIGINS.append(VERCEL_URL)
+
+# IMPORTANTE: CSRF_TRUSTED_ORIGINS debe ser igual a los orígenes permitidos
+CSRF_TRUSTED_ORIGINS = [origin for origin in CORS_ALLOWED_ORIGINS]
+
 if not DEBUG:
     # PRODUCCIÓN (Railway + Vercel)
     SESSION_COOKIE_SAMESITE = 'None'
@@ -155,8 +167,6 @@ if not DEBUG:
     SECURE_SSL_REDIRECT = True
 else:
     # DESARROLLO (Localhost)
-    # Importante: Si usas 'None', DEBE ser Secure=True, 
-    # pero para que funcione en Localhost sin HTTPS suele usarse 'Lax'
     SESSION_COOKIE_SAMESITE = 'Lax' 
     CSRF_COOKIE_SAMESITE = 'Lax'
     SESSION_COOKIE_SECURE = False
@@ -165,17 +175,8 @@ else:
 
 CSRF_COOKIE_HTTPONLY = False
 SESSION_COOKIE_HTTPONLY = True
-# ESTO ES CLAVE: Si la sesión es "Session Cookie", se borra al cerrar el navegador.
-# Si quieres que dure más, puedes poner SESSION_COOKIE_AGE (en segundos).
-SESSION_EXPIRE_AT_BROWSER_CLOSE = False # False hace que persista tras cerrar el navegador
-SESSION_COOKIE_AGE = 1209600 # 2 semanas en segundos
-
-# CORS Origins
-cors_origins = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173').split(',')
-CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins if origin.strip()]
-
-csrf_origins = os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173').split(',')
-CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in csrf_origins if origin.strip()]
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+SESSION_COOKIE_AGE = 1209600 # 2 semanas
 
 # 9. CONFIGURACIÓN DE EMAIL
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -206,10 +207,7 @@ JAZZMIN_SETTINGS = {
     "show_ui_builder": True,
 }
 
-CORS_ALLOWED_ORIGINS = [
-    "https://front-aroma-zen.vercel.app", 
-]
-
+# 12. REST FRAMEWORK (Movido al final y sin re-declarar CORS)
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework.authentication.SessionAuthentication",
