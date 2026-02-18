@@ -5,14 +5,12 @@ from rest_framework import status
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from django.views.decorators.csrf import csrf_exempt
+from rest_framework.authtoken.models import Token # <--- IMPORTANTE
 
 # ================= REGISTRO =================
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def registro_api(request):
-    """
-    Registro de usuario y login automático (sessionid).
-    """
     username = request.data.get("username", "").strip()
     password = request.data.get("password", "").strip()
     email = request.data.get("email", "").strip().lower()
@@ -27,10 +25,14 @@ def registro_api(request):
         return Response({"error": "Este email ya está registrado"}, status=400)
 
     user = User.objects.create_user(username=username, password=password, email=email)
-    login(request, user)  # crea sessionid automáticamente
+    
+    # Creamos el Token para el nuevo usuario
+    token, _ = Token.objects.get_or_create(user=user)
+    login(request, user) 
 
     return Response({
         "message": "Usuario creado y logueado",
+        "token": token.key, # ✅ Enviamos token
         "username": user.username,
         "email": user.email,
         "is_staff": user.is_staff
@@ -41,17 +43,12 @@ def registro_api(request):
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def login_api(request):
-    """
-    Login con email o username + contraseña (sessionid).
-
-    """
-    email = request.data.get("email")  # puede ser email o username
+    email = request.data.get("email") 
     password = request.data.get("password")
 
     if not email or not password:
         return Response({"error": "Email/Username y contraseña requeridos"}, status=400)
 
-    # Buscar primero por email, si no existe, por username
     user = User.objects.filter(email=email).first() or User.objects.filter(username=email).first()
     if not user:
         return Response({"error": "Usuario no encontrado"}, status=400)
@@ -60,15 +57,19 @@ def login_api(request):
     if not user:
         return Response({"error": "Contraseña incorrecta"}, status=400)
 
-    login(request, user)  # crea sessionid automáticamente
+    # Generamos o recuperamos el Token
+    token, _ = Token.objects.get_or_create(user=user)
+    login(request, user) 
 
     return Response({
         "message": "Login exitoso",
+        "token": token.key, # ✅ Enviamos token
         "username": user.username,
         "email": user.email,
         "is_staff": user.is_staff
     })
 
+# ... (El resto de tus funciones logout, me y actualizar_perfil se mantienen igual)
 
 
 # ================= LOGOUT =================
@@ -132,6 +133,7 @@ def actualizar_perfil(request):
         "username": user.username,
         "email": user.email,
         "first_name": user.first_name,
+
         "last_name": user.last_name,
         "is_staff": user.is_staff
     })
